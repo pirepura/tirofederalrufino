@@ -79,8 +79,22 @@ export async function POST(req: Request) {
       initPoint: pref.initPoint,
     });
   } catch (e) {
-    const msg =
-      e instanceof Error ? e.message : "Error al crear el pago en Mercado Pago";
-    return NextResponse.json({ error: msg }, { status: 502 });
+    // Extrae el detalle real del error de Mercado Pago (puede venir anidado)
+    const err = e as {
+      message?: string;
+      cause?: unknown;
+      error?: string;
+    };
+    const detalle =
+      err?.message ??
+      (typeof err?.error === "string" ? err.error : undefined) ??
+      "Error al crear el pago en Mercado Pago";
+
+    console.error("Detalle error MP:", JSON.stringify(e, Object.getOwnPropertyNames(e ?? {})));
+
+    return NextResponse.json(
+      { error: `Error al crear el pago en Mercado Pago: ${detalle}` },
+      { status: 502 }
+    );
   }
 }
