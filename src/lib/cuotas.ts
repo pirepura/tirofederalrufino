@@ -49,3 +49,8 @@ export async function marcarCuotaPagada(
     },
   });
 }
+
+// Elimina una cuota (para corregir cuotas mal generadas, ej. monto en $0).
+export async function eliminarCuota(cuotaId: string) {
+  return prisma.cuota.delete({ where: { id: cuotaId } });
+}

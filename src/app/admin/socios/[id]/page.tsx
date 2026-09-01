@@ -12,6 +12,7 @@ import { CuotaBadge } from "@/components/EstadoBadge";
 import {
   RegistrarPagoBtn,
   EliminarSocioBtn,
+  EliminarCuotaBtn,
 } from "@/components/AccionesCuota";
 
 export const dynamic = "force-dynamic";
@@ -149,11 +150,10 @@ export default async function SocioDetallePage({
                           : "-"}
                       </td>
                       <td className="px-4 py-3">
-                        {impaga ? (
-                          <RegistrarPagoBtn cuotaId={c.id} />
-                        ) : (
-                          <span className="text-xs text-slate-400">-</span>
-                        )}
+                        <div className="flex items-center gap-3">
+                          {impaga && <RegistrarPagoBtn cuotaId={c.id} />}
+                          <EliminarCuotaBtn cuotaId={c.id} />
+                        </div>
                       </td>
                     </tr>
                   );

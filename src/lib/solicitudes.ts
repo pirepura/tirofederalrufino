@@ -62,7 +62,8 @@ export async function aprobarSolicitud(solicitudId: string) {
           telefono: sol.celular,
           direccion: sol.domicilio,
           categoria,
-          cuotaMensual: 0, // el admin define el monto al editar / generar cuotas
+          // Monto inicial: valor por defecto del club (editable luego por el admin)
+          cuotaMensual: Number(process.env.CUOTA_MENSUAL_DEFAULT ?? 0) || 0,
           estado: ESTADO_SOCIO.ACTIVO,
           observaciones: sol.fueSocio
             ? `Ex socio. Año: ${sol.anioAsociado ?? "-"}, primer período: ${sol.primerPeriodo ?? "-"}`

@@ -237,3 +237,11 @@ Nota: quedó un socio de prueba en la base de producción (`prueba.pago@example.
 - [x] Circuito completo probado en local: inscripción → aprobación → login del nuevo socio → PDF válido. Datos de prueba limpiados.
 - Nota: al aprobar, el socio queda con `cuotaMensual: 0`; el admin ajusta el monto y genera cuotas con el botón existente.
 - Dependencia nueva: `pdf-lib`.
+
+### Etapa 16 — Corrección de cuotas y monto al aprobar solicitud
+Problema reportado: al aprobar una solicitud el socio quedaba con cuotaMensual $0, por lo que la cuota generada era de $0 y no impactaba deuda. Además faltaba forma de corregir cuotas mal generadas.
+- [x] `eliminarCuota` en `src/lib/cuotas.ts` + `DELETE /api/cuotas/[id]` (admin).
+- [x] Botón `EliminarCuotaBtn` en el detalle del socio (junto a registrar pago), para borrar cuotas mal generadas (ej. de $0).
+- [x] Al aprobar solicitud, el socio arranca con `cuotaMensual = CUOTA_MENSUAL_DEFAULT` (env) en vez de $0.
+- Recordatorio de flujo: el monto de cada socio se edita en Admin → Socios → Ver/editar (campo "Cuota mensual $"). El generador de cuotas usa ese monto; si ya existe una cuota del período NO la actualiza (hay que borrar la vieja y regenerar).
+- [x] `npm run build` OK.
