@@ -286,3 +286,16 @@ Objetivo: el precio de la cuota se define por categoría en un solo lugar; al au
 - [x] Eliminado componente duplicado `CategoriasManager.tsx`.
 - [x] `npm run build` OK.
 - Nota: para aumentar la cuota, Admin → Categorías → editar el precio de la categoría. Aplica a las cuotas que se generen después; las ya emitidas mantienen su monto.
+
+### Etapa 17 — Categorías como entidad con precio único (editable en un solo lugar)
+Objetivo: el precio de la cuota se define por categoría, en un solo lugar; al aumentar impacta en las cuotas futuras de todos los socios de esa categoría. Cuotas ya generadas conservan su monto histórico.
+- [x] Modelo `Categoria` (nombre único, cuotaMensual, activa). `Socio.categoriaId` + relación `categoriaRef`. Se quitaron `Socio.categoria` (texto) y `Socio.cuotaMensual`. Migración de datos preservada en Neon.
+- [x] `src/lib/categorias.ts` (listar, categoriasActivas, crear, actualizar, eliminar; no elimina si tiene socios).
+- [x] `categoriaSchema` (Zod). API `GET/POST /api/categorias` y `PUT/DELETE /api/categorias/[id]` (admin).
+- [x] Pantalla `Admin → Categorías` (`CategoriasAdmin.tsx`): crear, editar precio inline, eliminar. Link en menú admin.
+- [x] `SocioForm` usa selector de categoría (sin campo de precio). Validadores socio usan `categoriaId`. `socios.ts` crea/actualiza con `categoriaId`.
+- [x] Generador de cuotas usa `socio.categoriaRef.cuotaMensual` (salta socios sin monto). `AccionesCuota` con `EliminarCuotaBtn`.
+- [x] `aprobarSolicitud(solicitudId, categoriaId)` valida y asigna categoría. `AccionesSolicitud` con selector de categoría.
+- [x] Páginas admin (socios listado/detalle) muestran `categoriaRef.nombre` y precio.
+- [x] Build OK. Circuito probado en local (crear/editar/eliminar categoría, protección con socios, precio para generar cuotas).
+Nota: la contraseña del admin fue cambiada por el usuario (ya no es la inicial), correcto. Categorías reales cargadas por el usuario: General $10000, Estudiante $5000, Menor $2500.
