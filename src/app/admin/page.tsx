@@ -1,7 +1,12 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { actualizarCuotasVencidas } from "@/lib/cuotas";
-import { ESTADO_SOCIO, ESTADO_CUOTA, formatearPesos } from "@/lib/constants";
+import {
+  ESTADO_SOCIO,
+  ESTADO_CUOTA,
+  ESTADO_SOLICITUD,
+  formatearPesos,
+} from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +37,10 @@ export default async function AdminDashboard() {
     _sum: { monto: true },
   });
 
+  const solicitudesPendientes = await prisma.solicitudInscripcion.count({
+    where: { estado: ESTADO_SOLICITUD.PENDIENTE },
+  });
+
   const tarjetas = [
     { label: "Socios totales", valor: totalSocios, color: "text-tiro-azul" },
     { label: "Socios activos", valor: sociosActivos, color: "text-green-600" },
@@ -53,6 +62,19 @@ export default async function AdminDashboard() {
           Resumen general del club.
         </p>
       </div>
+
+      {solicitudesPendientes > 0 && (
+        <Link
+          href="/admin/solicitudes"
+          className="block rounded-xl border border-amber-200 bg-amber-50 p-4 transition hover:bg-amber-100"
+        >
+          <p className="text-sm font-semibold text-amber-800">
+            📋 Tenés {solicitudesPendientes} solicitud(es) de inscripción
+            pendiente(s) de revisión.
+          </p>
+          <p className="text-xs text-amber-700">Hacé clic para revisarlas.</p>
+        </Link>
+      )}
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {tarjetas.map((t) => (

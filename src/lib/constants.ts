@@ -22,6 +22,14 @@ export const ESTADO_CUOTA = {
 } as const;
 export type EstadoCuota = (typeof ESTADO_CUOTA)[keyof typeof ESTADO_CUOTA];
 
+export const ESTADO_SOLICITUD = {
+  PENDIENTE: "PENDIENTE",
+  APROBADA: "APROBADA",
+  RECHAZADA: "RECHAZADA",
+} as const;
+export type EstadoSolicitud =
+  (typeof ESTADO_SOLICITUD)[keyof typeof ESTADO_SOLICITUD];
+
 export const ESTADO_ALQUILER = {
   RESERVADO: "RESERVADO",
   CONFIRMADO: "CONFIRMADO",

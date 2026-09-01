@@ -224,3 +224,16 @@ Solución:
 - [x] Eliminado endpoint temporal `/api/diag`.
 - [x] `npm run build` OK.
 Nota: quedó un socio de prueba en la base de producción (`prueba.pago@example.com`) creado para testear; eliminar desde el panel admin cuando se confirme el pago.
+
+### Etapa 15 — Inscripción pública de socios con firma y PDF
+- [x] Modelo `SolicitudInscripcion` (Prisma) + `db push` en Neon. Constantes `ESTADO_SOLICITUD`.
+- [x] Validador `solicitudInscripcionSchema` (Zod), con vinculación previa condicional y firma requerida.
+- [x] `POST /api/inscripcion` (público): valida, evita duplicados (email/DNI/pendiente), hashea password, crea solicitud PENDIENTE.
+- [x] Página pública `/inscripcion` (`InscripcionForm.tsx`) con `FirmaCanvas.tsx` (firma con dedo/mouse, PNG data URL), selector "primera vez / ya fui socio" y declaración jurada. Link desde `/login`.
+- [x] `src/lib/solicitudes.ts`: `aprobarSolicitud` (crea User+Socio activo reutilizando passwordHash, número correlativo, `separarNombre`) y `rechazarSolicitud`.
+- [x] `POST /api/solicitudes/[id]` (admin): aprobar/rechazar. Componente `AccionesSolicitud.tsx`.
+- [x] Panel admin: `/admin/solicitudes` (listado) y `/admin/solicitudes/[id]` (detalle con firma visible). Link "Solicitudes" en el menú + aviso de pendientes en el dashboard.
+- [x] `GET /api/solicitudes/[id]/pdf`: PDF con formato del club (pdf-lib, runtime nodejs), incluye logo si existe `public/escudo.png`, campos, declaración y firma. Botón "Descargar / imprimir PDF" en el detalle.
+- [x] Circuito completo probado en local: inscripción → aprobación → login del nuevo socio → PDF válido. Datos de prueba limpiados.
+- Nota: al aprobar, el socio queda con `cuotaMensual: 0`; el admin ajusta el monto y genera cuotas con el botón existente.
+- Dependencia nueva: `pdf-lib`.

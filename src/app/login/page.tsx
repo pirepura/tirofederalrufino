@@ -32,7 +32,17 @@ export default async function LoginPage() {
           <LoginForm />
         </div>
 
-        <p className="mt-6 text-center text-xs text-tiro-celesteClaro">
+        <p className="mt-4 text-center text-sm text-white">
+          ¿Querés asociarte?{" "}
+          <a
+            href="/inscripcion"
+            className="font-semibold text-tiro-celesteClaro underline"
+          >
+            Completá la solicitud de inscripción
+          </a>
+        </p>
+
+        <p className="mt-4 text-center text-xs text-tiro-celesteClaro">
           Acceso exclusivo para socios y administración del club.
         </p>
       </div>

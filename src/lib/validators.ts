@@ -52,3 +52,38 @@ export const generarCuotasSchema = z.object({
 
 export type SocioCreateInput = z.infer<typeof socioCreateSchema>;
 export type SocioUpdateInput = z.infer<typeof socioUpdateSchema>;
+
+// Solicitud de inscripción pública de socio
+export const solicitudInscripcionSchema = z
+  .object({
+    nombreCompleto: z.string().min(1, "El nombre completo es obligatorio"),
+    dni: z.string().min(6, "DNI inválido"),
+    fechaNacimiento: z.string().min(1, "La fecha de nacimiento es obligatoria"),
+    domicilio: z.string().min(1, "El domicilio es obligatorio"),
+    email: z.string().email("Email inválido"),
+    celular: z.string().min(6, "El celular es obligatorio"),
+    password: z
+      .string()
+      .min(6, "La contraseña debe tener al menos 6 caracteres"),
+    // Vinculación previa
+    fueSocio: z.boolean().default(false),
+    anioAsociado: z.coerce.number().int().optional(),
+    categoriaPrevia: z.string().optional().or(z.literal("")),
+    primerPeriodo: z.string().optional().or(z.literal("")),
+    // Firma (data URL PNG) y declaración jurada
+    firmaDataUrl: z
+      .string()
+      .min(1, "La firma es obligatoria")
+      .refine((v) => v.startsWith("data:image/"), "Firma inválida"),
+    aceptaDeclaracion: z
+      .boolean()
+      .refine((v) => v === true, "Debés aceptar la declaración jurada"),
+  })
+  .refine(
+    (d) => !d.fueSocio || (d.anioAsociado && d.anioAsociado >= 1900),
+    { message: "Indicá el año en que te asociaste", path: ["anioAsociado"] }
+  );
+
+export type SolicitudInscripcionInput = z.infer<
+  typeof solicitudInscripcionSchema
+>;
