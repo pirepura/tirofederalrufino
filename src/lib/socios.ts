@@ -45,8 +45,7 @@ export async function crearSocio(input: SocioCreateInput) {
           apellido: input.apellido,
           telefono: input.telefono || null,
           direccion: input.direccion || null,
-          categoria: input.categoria || "General",
-          cuotaMensual: input.cuotaMensual,
+          categoriaId: input.categoriaId,
           estado: input.estado,
           observaciones: input.observaciones || null,
         },
@@ -98,8 +97,7 @@ export async function actualizarSocio(
       telefono: input.telefono === undefined ? undefined : input.telefono || null,
       direccion:
         input.direccion === undefined ? undefined : input.direccion || null,
-      categoria: input.categoria ?? undefined,
-      cuotaMensual: input.cuotaMensual ?? undefined,
+      categoriaId: input.categoriaId ?? undefined,
       estado: input.estado ?? undefined,
       observaciones:
         input.observaciones === undefined

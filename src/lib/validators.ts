@@ -9,8 +9,7 @@ export const socioCreateSchema = z.object({
   password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
   telefono: z.string().optional().or(z.literal("")),
   direccion: z.string().optional().or(z.literal("")),
-  categoria: z.string().default("General"),
-  cuotaMensual: z.coerce.number().min(0, "La cuota no puede ser negativa"),
+  categoriaId: z.string().min(1, "Seleccioná una categoría"),
   estado: z
     .enum([
       ESTADO_SOCIO.ACTIVO,
@@ -87,3 +86,12 @@ export const solicitudInscripcionSchema = z
 export type SolicitudInscripcionInput = z.infer<
   typeof solicitudInscripcionSchema
 >;
+
+// Categorías de socio (con su precio de cuota)
+export const categoriaSchema = z.object({
+  nombre: z.string().min(1, "El nombre de la categoría es obligatorio"),
+  cuotaMensual: z.coerce.number().min(0, "El monto no puede ser negativo"),
+  activa: z.boolean().default(true),
+});
+
+export type CategoriaInput = z.infer<typeof categoriaSchema>;

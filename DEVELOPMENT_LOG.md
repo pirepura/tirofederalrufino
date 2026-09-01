@@ -245,3 +245,16 @@ Problema reportado: al aprobar una solicitud el socio quedaba con cuotaMensual $
 - [x] Al aprobar solicitud, el socio arranca con `cuotaMensual = CUOTA_MENSUAL_DEFAULT` (env) en vez de $0.
 - Recordatorio de flujo: el monto de cada socio se edita en Admin → Socios → Ver/editar (campo "Cuota mensual $"). El generador de cuotas usa ese monto; si ya existe una cuota del período NO la actualiza (hay que borrar la vieja y regenerar).
 - [x] `npm run build` OK.
+
+### Etapa 17 — Categorías con precio único (editable en un solo lugar)
+Cambio de diseño: el precio de la cuota ya no se carga por socio; ahora vive en la **categoría**. Cambiar el precio de una categoría impacta en las próximas cuotas de todos sus socios. Las cuotas ya generadas conservan su monto histórico (decisión del usuario).
+- [x] Modelo `Categoria` {nombre único, cuotaMensual, activa}. `Socio.categoriaId` + relación `categoriaRef`. Se eliminaron `Socio.categoria` (texto) y `Socio.cuotaMensual`. Migración de datos hecha en Neon (categoría "General" $10000, socios vinculados).
+- [x] `src/lib/categorias.ts`: `listarCategorias` (con _count socios), `categoriasActivas`, `crearCategoria`, `actualizarCategoria`, `eliminarCategoria` (bloquea si tiene socios).
+- [x] APIs: `GET/POST /api/categorias`, `PUT/DELETE /api/categorias/[id]` (admin).
+- [x] Pantalla `Admin → Categorías` (`CategoriasManager.tsx`): alta, edición inline del precio, eliminar. Link en el menú.
+- [x] `SocioForm`: selector de categoría (sin campo de precio). Páginas nuevo/editar socio y listado usan `categoriaRef`. Validador socio usa `categoriaId`.
+- [x] Generador de cuotas: usa `categoriaRef.cuotaMensual`; omite socios sin categoría o con cuota $0 (devuelve `sinMonto`).
+- [x] Aprobación de solicitud: el admin elige la categoría al aprobar (`AccionesSolicitud` con selector; `aprobarSolicitud(id, categoriaId)`).
+- [x] Seed de desarrollo actualizado (crea categorías General/Estudiante y vincula).
+- [x] Build OK. CRUD de categorías probado en local (crear/editar/eliminar).
+- Nota: los 2 socios reales (Luciano, María Soledad) quedaron en "General" $10000. Ajustar el precio real de General cuando corresponda.

@@ -12,11 +12,12 @@ export type SocioFormData = {
   email: string;
   telefono: string;
   direccion: string;
-  categoria: string;
-  cuotaMensual: number;
+  categoriaId: string;
   estado: string;
   observaciones: string;
 };
+
+type Categoria = { id: string; nombre: string; cuotaMensual: number };
 
 const vacio: SocioFormData = {
   nombre: "",
@@ -25,8 +26,7 @@ const vacio: SocioFormData = {
   email: "",
   telefono: "",
   direccion: "",
-  categoria: "General",
-  cuotaMensual: 5000,
+  categoriaId: "",
   estado: ESTADO_SOCIO.ACTIVO,
   observaciones: "",
 };
@@ -34,12 +34,18 @@ const vacio: SocioFormData = {
 export default function SocioForm({
   inicial,
   modo,
+  categorias,
 }: {
   inicial?: Partial<SocioFormData>;
   modo: "crear" | "editar";
+  categorias: Categoria[];
 }) {
   const router = useRouter();
-  const [data, setData] = useState<SocioFormData>({ ...vacio, ...inicial });
+  const [data, setData] = useState<SocioFormData>({
+    ...vacio,
+    categoriaId: inicial?.categoriaId ?? categorias[0]?.id ?? "",
+    ...inicial,
+  });
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -135,22 +141,24 @@ export default function SocioForm({
         </div>
         <div>
           <label className="label">Categoría</label>
-          <input
+          <select
             className="input"
-            value={data.categoria}
-            onChange={(e) => update("categoria", e.target.value)}
-          />
-        </div>
-        <div>
-          <label className="label">Cuota mensual ($)</label>
-          <input
-            type="number"
-            min={0}
-            className="input"
-            value={data.cuotaMensual}
-            onChange={(e) => update("cuotaMensual", Number(e.target.value))}
+            value={data.categoriaId}
+            onChange={(e) => update("categoriaId", e.target.value)}
             required
-          />
+          >
+            <option value="" disabled>
+              Seleccioná una categoría
+            </option>
+            {categorias.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nombre} — ${c.cuotaMensual.toLocaleString("es-AR")}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-tiro-grisTexto">
+            El precio de la cuota se define en la sección Categorías.
+          </p>
         </div>
         <div>
           <label className="label">Estado</label>

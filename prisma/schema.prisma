@@ -47,10 +47,11 @@ model Socio {
   direccion     String?
   fechaAlta     DateTime @default(now())
   estado        String   @default("ACTIVO") // ACTIVO | INACTIVO | SUSPENDIDO
-  // Categoría de cuota (permite distintos montos a futuro)
-  categoria     String   @default("General")
-  cuotaMensual  Float    @default(0)
   observaciones String?
+
+  // Categoría del socio (define el precio de la cuota)
+  categoriaId String?
+  categoriaRef Categoria? @relation(fields: [categoriaId], references: [id])
 
   // Cuenta de acceso del socio
   userId String @unique
@@ -58,6 +59,23 @@ model Socio {
 
   cuotas     Cuota[]
   alquileres AlquilerLinea[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// Categorías de socio (cada una con su valor de cuota mensual)
+// El precio se define una vez por categoría y se cambia en un solo lugar.
+// ---------------------------------------------------------------------------
+
+model Categoria {
+  id           String  @id @default(cuid())
+  nombre       String  @unique
+  cuotaMensual Float    @default(0)
+  activa       Boolean  @default(true)
+
+  socios Socio[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

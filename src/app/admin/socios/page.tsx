@@ -10,6 +10,7 @@ export default async function SociosPage() {
     orderBy: { numeroSocio: "asc" },
     include: {
       user: { select: { email: true } },
+      categoriaRef: true,
     },
   });
 
@@ -52,8 +53,10 @@ export default async function SociosPage() {
                   <td className="px-4 py-3 text-tiro-grisTexto">
                     {s.user.email}
                   </td>
-                  <td className="px-4 py-3">{s.categoria}</td>
-                  <td className="px-4 py-3">{formatearPesos(s.cuotaMensual)}</td>
+                  <td className="px-4 py-3">{s.categoriaRef?.nombre ?? "-"}</td>
+                  <td className="px-4 py-3">
+                    {formatearPesos(s.categoriaRef?.cuotaMensual ?? 0)}
+                  </td>
                   <td className="px-4 py-3">
                     <SocioBadge estado={s.estado} />
                   </td>

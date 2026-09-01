@@ -17,7 +17,11 @@ function separarNombre(nombreCompleto: string): {
 
 // Aprueba una solicitud: crea el User + Socio (activo) reutilizando el
 // passwordHash ya generado en la solicitud (no se re-hashea).
-export async function aprobarSolicitud(solicitudId: string) {
+// El admin indica la categoría (categoriaId) al aprobar.
+export async function aprobarSolicitud(
+  solicitudId: string,
+  categoriaId: string
+) {
   const sol = await prisma.solicitudInscripcion.findUnique({
     where: { id: solicitudId },
   });
@@ -25,6 +29,12 @@ export async function aprobarSolicitud(solicitudId: string) {
   if (sol.estado !== ESTADO_SOLICITUD.PENDIENTE) {
     throw new Error("La solicitud ya fue procesada");
   }
+
+  if (!categoriaId) throw new Error("Seleccioná una categoría para el socio");
+  const categoria = await prisma.categoria.findUnique({
+    where: { id: categoriaId },
+  });
+  if (!categoria) throw new Error("La categoría seleccionada no existe");
 
   // Revalidar que no exista ya el email o DNI (por si se creó entre medio)
   const userExistente = await prisma.user.findUnique({
@@ -45,8 +55,6 @@ export async function aprobarSolicitud(solicitudId: string) {
   });
   const numeroSocio = (ultimo?.numeroSocio ?? 0) + 1;
 
-  const categoria = sol.fueSocio && sol.categoriaPrevia ? sol.categoriaPrevia : "General";
-
   const user = await prisma.user.create({
     data: {
       email: sol.email,
@@ -61,9 +69,7 @@ export async function aprobarSolicitud(solicitudId: string) {
           apellido,
           telefono: sol.celular,
           direccion: sol.domicilio,
-          categoria,
-          // Monto inicial: valor por defecto del club (editable luego por el admin)
-          cuotaMensual: Number(process.env.CUOTA_MENSUAL_DEFAULT ?? 0) || 0,
+          categoriaId: categoria.id,
           estado: ESTADO_SOCIO.ACTIVO,
           observaciones: sol.fueSocio
             ? `Ex socio. Año: ${sol.anioAsociado ?? "-"}, primer período: ${sol.primerPeriodo ?? "-"}`

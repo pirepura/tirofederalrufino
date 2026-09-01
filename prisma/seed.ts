@@ -60,7 +60,22 @@ async function main() {
 
   const socioPass = await bcrypt.hash("socio123", 10);
 
+  // Crear categorías de ejemplo
+  const catGeneral = await prisma.categoria.upsert({
+    where: { nombre: "General" },
+    update: {},
+    create: { nombre: "General", cuotaMensual: 5000 },
+  });
+  const catEstudiante = await prisma.categoria.upsert({
+    where: { nombre: "Estudiante" },
+    update: {},
+    create: { nombre: "Estudiante", cuotaMensual: 3500 },
+  });
+
   for (const s of sociosDemo) {
+    const categoriaId =
+      s.categoria === "Estudiante" ? catEstudiante.id : catGeneral.id;
+
     const user = await prisma.user.upsert({
       where: { email: s.email },
       update: {},
@@ -75,8 +90,7 @@ async function main() {
             dni: s.dni,
             nombre: s.nombre,
             apellido: s.apellido,
-            categoria: s.categoria,
-            cuotaMensual: s.cuotaMensual,
+            categoriaId,
             estado: ACTIVO,
           },
         },

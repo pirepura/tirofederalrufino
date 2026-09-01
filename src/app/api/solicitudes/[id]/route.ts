@@ -19,7 +19,7 @@ export async function POST(
 
   try {
     if (accion === "aprobar") {
-      const user = await aprobarSolicitud(params.id);
+      const user = await aprobarSolicitud(params.id, body?.categoriaId);
       return NextResponse.json({ ok: true, socioId: user.socio?.id });
     }
     if (accion === "rechazar") {

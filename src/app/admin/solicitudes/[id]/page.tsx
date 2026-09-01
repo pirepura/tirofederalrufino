@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { ESTADO_SOLICITUD } from "@/lib/constants";
+import { categoriasActivas } from "@/lib/categorias";
 import AccionesSolicitud from "@/components/AccionesSolicitud";
 
 export const dynamic = "force-dynamic";
@@ -28,6 +29,7 @@ export default async function SolicitudDetallePage({
   if (!s) notFound();
 
   const esPendiente = s.estado === ESTADO_SOLICITUD.PENDIENTE;
+  const categorias = await categoriasActivas();
 
   return (
     <div className="space-y-6">
@@ -114,7 +116,7 @@ export default async function SolicitudDetallePage({
           <h2 className="text-sm font-bold uppercase tracking-wide text-tiro-azul">
             Acciones
           </h2>
-          <AccionesSolicitud solicitudId={s.id} />
+          <AccionesSolicitud solicitudId={s.id} categorias={categorias} />
         </section>
       ) : (
         <div className="card">

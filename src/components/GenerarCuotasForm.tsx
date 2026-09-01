@@ -32,9 +32,11 @@ export default function GenerarCuotasForm() {
 
     if (res.ok) {
       const data = await res.json();
-      setMsg(
-        `Listo: ${data.creadas} cuota(s) generada(s), ${data.omitidas} ya existían.`
-      );
+      let texto = `Listo: ${data.creadas} cuota(s) generada(s), ${data.omitidas} ya existían.`;
+      if (data.sinMonto > 0) {
+        texto += ` ${data.sinMonto} socio(s) sin categoría o con cuota en $0 fueron omitidos.`;
+      }
+      setMsg(texto);
       router.refresh();
     } else {
       const body = await res.json().catch(() => ({}));

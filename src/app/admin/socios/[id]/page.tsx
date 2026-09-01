@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { actualizarCuotasVencidas } from "@/lib/cuotas";
+import { categoriasActivas } from "@/lib/categorias";
 import {
   ESTADO_CUOTA,
   formatearPesos,
@@ -28,11 +29,14 @@ export default async function SocioDetallePage({
     where: { id: params.id },
     include: {
       user: { select: { email: true } },
+      categoriaRef: true,
       cuotas: { orderBy: [{ periodoAnio: "desc" }, { periodoMes: "desc" }] },
     },
   });
 
   if (!socio) notFound();
+
+  const categorias = await categoriasActivas();
 
   const saldo = socio.cuotas
     .filter(
@@ -72,13 +76,13 @@ export default async function SocioDetallePage({
         <div className="card">
           <p className="text-sm text-tiro-grisTexto">Cuota mensual</p>
           <p className="mt-1 text-2xl font-bold text-tiro-azul">
-            {formatearPesos(socio.cuotaMensual)}
+            {formatearPesos(socio.categoriaRef?.cuotaMensual ?? 0)}
           </p>
         </div>
         <div className="card">
           <p className="text-sm text-tiro-grisTexto">Categoría</p>
           <p className="mt-1 text-2xl font-bold text-tiro-azul">
-            {socio.categoria}
+            {socio.categoriaRef?.nombre ?? "Sin categoría"}
           </p>
         </div>
       </div>
@@ -87,6 +91,7 @@ export default async function SocioDetallePage({
         <h2 className="text-lg font-semibold text-tiro-azul">Datos del socio</h2>
         <SocioForm
           modo="editar"
+          categorias={categorias}
           inicial={{
             id: socio.id,
             nombre: socio.nombre,
@@ -95,8 +100,7 @@ export default async function SocioDetallePage({
             email: socio.user.email,
             telefono: socio.telefono ?? "",
             direccion: socio.direccion ?? "",
-            categoria: socio.categoria,
-            cuotaMensual: socio.cuotaMensual,
+            categoriaId: socio.categoriaId ?? "",
             estado: socio.estado,
             observaciones: socio.observaciones ?? "",
           }}

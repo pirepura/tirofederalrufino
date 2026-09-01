@@ -16,7 +16,10 @@ export default async function SocioDashboard() {
   await actualizarCuotasVencidas();
 
   const socioId = session.user.socioId!;
-  const socio = await prisma.socio.findUnique({ where: { id: socioId } });
+  const socio = await prisma.socio.findUnique({
+    where: { id: socioId },
+    include: { categoriaRef: true },
+  });
   const impagas = await cuotasImpagasDeSocio(socioId);
   const saldo = impagas.reduce((t, c) => t + c.monto, 0);
 
@@ -27,7 +30,7 @@ export default async function SocioDashboard() {
           Hola, {socio?.nombre} 👋
         </h1>
         <p className="text-sm text-tiro-grisTexto">
-          Socio N° {socio?.numeroSocio} — {socio?.categoria}
+          Socio N° {socio?.numeroSocio} — {socio?.categoriaRef?.nombre ?? ""}
         </p>
       </div>
 

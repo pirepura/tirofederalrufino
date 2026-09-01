@@ -5,6 +5,7 @@ const adminLinks = [
   { href: "/admin", label: "Inicio" },
   { href: "/admin/socios", label: "Socios" },
   { href: "/admin/solicitudes", label: "Solicitudes" },
+  { href: "/admin/categorias", label: "Categorías" },
   { href: "/admin/cuotas", label: "Cuotas" },
   { href: "/admin/perfil", label: "Mi cuenta" },
 ];

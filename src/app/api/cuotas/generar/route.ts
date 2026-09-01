@@ -25,14 +25,25 @@ export async function POST(req: Request) {
 
   const sociosActivos = await prisma.socio.findMany({
     where: { estado: ESTADO_SOCIO.ACTIVO },
+    include: { categoriaRef: true },
   });
 
   const fechaVencimiento = new Date(periodoAnio, periodoMes - 1, diaVencimiento);
 
   let creadas = 0;
   let omitidas = 0;
+  let sinMonto = 0;
 
   for (const socio of sociosActivos) {
+    // El monto sale del precio actual de la categoría del socio.
+    const monto = socio.categoriaRef?.cuotaMensual ?? 0;
+
+    // No generamos cuotas de $0 (socio sin categoría o categoría en $0)
+    if (monto <= 0) {
+      sinMonto++;
+      continue;
+    }
+
     // Evita duplicar la cuota del período (respeta el unique del schema)
     const existe = await prisma.cuota.findUnique({
       where: {
@@ -54,7 +65,7 @@ export async function POST(req: Request) {
         socioId: socio.id,
         periodoMes,
         periodoAnio,
-        monto: socio.cuotaMensual,
+        monto,
         descripcion: "Cuota mensual",
         fechaVencimiento,
         estado: ESTADO_CUOTA.PENDIENTE,
@@ -63,5 +74,5 @@ export async function POST(req: Request) {
     creadas++;
   }
 
-  return NextResponse.json({ creadas, omitidas });
+  return NextResponse.json({ creadas, omitidas, sinMonto });
 }
