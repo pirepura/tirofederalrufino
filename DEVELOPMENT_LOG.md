@@ -213,3 +213,14 @@ Decisión: **PostgreSQL en todos lados** (local y producción). Prisma ya no per
 - [x] Reutiliza `CambiarPasswordForm` y la API `POST /api/perfil/password` (que ya sirve para cualquier usuario logueado, valida contraseña actual)
 - [x] Link "Mi cuenta" agregado al menú del admin
 - [x] `npm run build` OK
+
+### Etapa 14 — Fix pago Mercado Pago en producción (SDK → REST)
+Síntoma: en Vercel, crear preferencia devolvía "At least one policy returned UNAUTHORIZED", pese a que el token y APP_URL estaban correctos (verificado con endpoint /api/diag temporal: token 71 chars, sin espacios; APP_URL ok).
+Causa: el SDK oficial de Mercado Pago fallaba en el entorno serverless de Vercel. La misma petición vía REST directa funcionaba (HTTP 201).
+Solución:
+- [x] Reescrito `src/lib/mercadopago.ts` para usar `fetch` a la API REST (`/checkout/preferences` y `/v1/payments/:id`) en vez del SDK. Se quitaron imports de `mercadopago`.
+- [x] `getToken()` con `.trim()`; manejo de error que propaga el `message` real de MP.
+- [x] Validación de firma del webhook intacta.
+- [x] Eliminado endpoint temporal `/api/diag`.
+- [x] `npm run build` OK.
+Nota: quedó un socio de prueba en la base de producción (`prueba.pago@example.com`) creado para testear; eliminar desde el panel admin cuando se confirme el pago.

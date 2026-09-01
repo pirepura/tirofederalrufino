@@ -1,18 +1,21 @@
 import crypto from "crypto";
-import { MercadoPagoConfig, Preference, Payment } from "mercadopago";
-import type { PreferenceRequest } from "mercadopago/dist/clients/preference/commonTypes";
 
-// Configuración del SDK de Mercado Pago (v2).
+// Integración con Mercado Pago vía API REST directa (fetch).
+// Se usa REST en lugar del SDK oficial porque el SDK, en el entorno
+// serverless de Vercel, devolvía "policy UNAUTHORIZED" al crear preferencias.
+// La misma petición vía REST funciona correctamente.
 // El access token se toma de la variable de entorno MP_ACCESS_TOKEN.
 
-function getConfig() {
-  const accessToken = process.env.MP_ACCESS_TOKEN;
+const MP_API = "https://api.mercadopago.com";
+
+function getToken(): string {
+  const accessToken = process.env.MP_ACCESS_TOKEN?.trim();
   if (!accessToken) {
     throw new Error(
       "Falta MP_ACCESS_TOKEN. Configurá las credenciales de Mercado Pago en .env"
     );
   }
-  return new MercadoPagoConfig({ accessToken });
+  return accessToken;
 }
 
 // Indica si Mercado Pago está configurado con un token real (no el de placeholder).
@@ -42,14 +45,12 @@ function esUrlLocal(url: string): boolean {
 
 // Crea una preferencia de pago en Mercado Pago y devuelve el link de checkout.
 export async function crearPreferenciaPago(input: CrearPreferenciaInput) {
-  const config = getConfig();
-  const preference = new Preference(config);
-
-  const appUrl = process.env.APP_URL ?? "http://localhost:3000";
+  const token = getToken();
+  const appUrl = (process.env.APP_URL ?? "http://localhost:3000").trim();
   const urlLocal = esUrlLocal(appUrl);
 
-  // Cuerpo base de la preferencia
-  const body: PreferenceRequest = {
+  // Cuerpo de la preferencia
+  const body: Record<string, unknown> = {
     items: [
       {
         id: input.externalReference,
@@ -59,7 +60,6 @@ export async function crearPreferenciaPago(input: CrearPreferenciaInput) {
         currency_id: "ARS",
       },
     ],
-    payer: input.emailComprador ? { email: input.emailComprador } : undefined,
     external_reference: input.externalReference,
     back_urls: {
       success: `${appUrl}/socio/pago/resultado?estado=exito`,
@@ -68,32 +68,55 @@ export async function crearPreferenciaPago(input: CrearPreferenciaInput) {
     },
   };
 
-  // Solo agregamos notification_url y auto_return si la URL es pública.
-  // En local, Mercado Pago rechaza estos campos por no ser accesibles.
+  if (input.emailComprador) {
+    body.payer = { email: input.emailComprador };
+  }
+
+  // notification_url y auto_return solo con URL pública (MP los rechaza en local)
   if (!urlLocal) {
     body.auto_return = "approved";
     body.notification_url = `${appUrl}/api/pagos/webhook`;
   }
 
-  try {
-    const result = await preference.create({ body });
-    return {
-      id: result.id,
-      initPoint: result.init_point,
-      sandboxInitPoint: result.sandbox_init_point,
-    };
-  } catch (e) {
-    // Logueamos el detalle real que devuelve Mercado Pago para diagnóstico
-    console.error("Mercado Pago - error al crear preferencia:", e);
-    throw e;
+  const res = await fetch(`${MP_API}/checkout/preferences`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    const detalle =
+      (data && (data.message || data.error)) ?? `HTTP ${res.status}`;
+    console.error("Mercado Pago - error al crear preferencia:", data);
+    throw new Error(String(detalle));
   }
+
+  return {
+    id: data.id as string,
+    initPoint: data.init_point as string,
+    sandboxInitPoint: data.sandbox_init_point as string,
+  };
 }
 
 // Consulta el detalle de un pago por su id (usado en el webhook).
 export async function obtenerPago(paymentId: string) {
-  const config = getConfig();
-  const payment = new Payment(config);
-  return payment.get({ id: paymentId });
+  const token = getToken();
+  const res = await fetch(`${MP_API}/v1/payments/${paymentId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    throw new Error(`Error al consultar el pago: HTTP ${res.status}`);
+  }
+  return res.json() as Promise<{
+    id: number;
+    status: string;
+    external_reference: string | null;
+  }>;
 }
 
 // ---------------------------------------------------------------------------
