@@ -1,0 +1,97 @@
+import Link from "next/link";
+import { requireSocio } from "@/lib/session";
+import { prisma } from "@/lib/db";
+import {
+  actualizarCuotasVencidas,
+  cuotasImpagasDeSocio,
+} from "@/lib/cuotas";
+import { formatearPesos, nombreMes } from "@/lib/constants";
+import { CuotaBadge } from "@/components/EstadoBadge";
+import PagarCuotaBtn from "@/components/PagarCuotaBtn";
+
+export const dynamic = "force-dynamic";
+
+export default async function SocioDashboard() {
+  const session = await requireSocio();
+  await actualizarCuotasVencidas();
+
+  const socioId = session.user.socioId!;
+  const socio = await prisma.socio.findUnique({ where: { id: socioId } });
+  const impagas = await cuotasImpagasDeSocio(socioId);
+  const saldo = impagas.reduce((t, c) => t + c.monto, 0);
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-tiro-azul">
+          Hola, {socio?.nombre} 👋
+        </h1>
+        <p className="text-sm text-tiro-grisTexto">
+          Socio N° {socio?.numeroSocio} — {socio?.categoria}
+        </p>
+      </div>
+
+      {/* Recordatorio de cuotas impagas */}
+      {impagas.length > 0 ? (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-red-800">
+                Tenés {impagas.length} cuota(s) impaga(s)
+              </p>
+              <p className="mt-1 text-3xl font-bold text-red-700">
+                {formatearPesos(saldo)}
+              </p>
+              <p className="text-xs text-red-600">Saldo total a pagar</p>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-green-200 bg-green-50 p-5">
+          <p className="text-sm font-semibold text-green-800">
+            ¡Estás al día! No tenés cuotas pendientes. ✅
+          </p>
+        </div>
+      )}
+
+      {/* Detalle de cuotas impagas con botón de pago */}
+      {impagas.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold text-tiro-azul">
+            Cuotas pendientes
+          </h2>
+          <div className="space-y-3">
+            {impagas.map((c) => (
+              <div
+                key={c.id}
+                className="card flex flex-wrap items-center justify-between gap-4"
+              >
+                <div>
+                  <p className="font-semibold text-tiro-azul">
+                    {c.descripcion} — {nombreMes(c.periodoMes)} {c.periodoAnio}
+                  </p>
+                  <p className="text-sm text-tiro-grisTexto">
+                    Vence el {c.fechaVencimiento.toLocaleDateString("es-AR")}
+                  </p>
+                  <div className="mt-1">
+                    <CuotaBadge estado={c.estado} />
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-2">
+                  <p className="text-xl font-bold text-tiro-azul">
+                    {formatearPesos(c.monto)}
+                  </p>
+                  <PagarCuotaBtn cuotaId={c.id} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <Link href="/socio/pagos" className="btn-secondary">
+        Ver historial completo de pagos
+      </Link>
+    </div>
+  );
+}

@@ -1,0 +1,193 @@
+# Registro de Desarrollo — Tiro Federal Rufino
+
+Sistema de administración de socios y pagos del Tiro Federal Rufino.
+Este documento lleva el registro detallado de todo lo creado para evitar duplicaciones.
+
+---
+
+## Stack tecnológico
+
+| Área | Tecnología | Motivo |
+|------|-----------|--------|
+| Framework | Next.js 14 (App Router) + TypeScript | Frontend + backend en un solo proyecto, responsive |
+| Estilos | Tailwind CSS | Diseño con paleta institucional del Tiro |
+| Base de datos | Prisma + SQLite (dev) | Cero configuración; migrable a PostgreSQL en producción |
+| Autenticación | NextAuth (Auth.js) con credenciales | Login con roles ADMIN / SOCIO |
+| Pagos | Mercado Pago SDK | Cobro de cuotas de socios |
+| Validación | Zod | Validación de formularios y APIs |
+
+## Paleta de colores institucional
+
+Definida en `tailwind.config.ts` bajo el prefijo `tiro`:
+- `tiro-celeste` #5FA8E0, `tiro-celesteClaro` #8FC3EC (celeste bandera)
+- `tiro-azul` #1E4C8A, `tiro-azulOscuro` #132F55 (azul institucional)
+- `tiro-dorado` #C9A227 (acentos / escudo)
+- `tiro-blanco`, `tiro-gris`, `tiro-grisTexto`
+
+> Nota: paleta basada en la identidad celeste/azul y blanco típica de los tiros federales argentinos.
+> Ajustable si se cuenta con el manual de marca / escudo oficial.
+
+---
+
+## Estructura del proyecto (en construcción)
+
+```
+TiroFederalRufino/
+├── package.json
+├── tsconfig.json
+├── next.config.mjs
+├── postcss.config.mjs
+├── tailwind.config.ts
+├── .env / .env.example
+├── DEVELOPMENT_LOG.md
+├── prisma/
+│   ├── schema.prisma       # modelos de datos
+│   └── seed.ts             # datos de ejemplo
+└── src/
+    ├── app/                # rutas (App Router)
+    ├── components/         # componentes reutilizables
+    └── lib/                # utilidades (db, auth, mercadopago)
+```
+
+---
+
+## Bitácora de cambios
+
+### Etapa 1 — Inicialización del proyecto
+- [x] `package.json` con dependencias y scripts
+- [x] `tsconfig.json`, `next.config.mjs`, `postcss.config.mjs`
+- [x] `tailwind.config.ts` con paleta institucional del Tiro
+- [x] `.gitignore`, `.env`, `.env.example`
+- [x] `DEVELOPMENT_LOG.md` (este archivo)
+
+### Etapa 2 — Base de datos (Prisma)
+- [x] `prisma/schema.prisma` con modelos: `User`, `Socio`, `Cuota`, `LineaTiro`, `AlquilerLinea`
+- [x] SQLite no soporta enums → estados guardados como String, validados con `src/lib/constants.ts`
+- [x] `src/lib/db.ts` (cliente Prisma singleton)
+- [x] `src/lib/constants.ts` (ROLES, ESTADO_SOCIO, ESTADO_CUOTA, ESTADO_ALQUILER, helpers `nombreMes`, `formatearPesos`)
+- [x] Base `dev.db` creada con `prisma db push`
+- Restricciones clave: `Cuota` tiene `@@unique([socioId, periodoMes, periodoAnio])` para evitar cuotas duplicadas por período
+- Módulo alquiler (`LineaTiro`, `AlquilerLinea`) definido pero sin UI (para el futuro)
+
+### Etapa 3 — Autenticación con roles
+- [x] `src/lib/auth.ts` — `authOptions` de NextAuth con CredentialsProvider (email + password con bcrypt), JWT, callbacks que agregan `rol` y `socioId` a la sesión
+- [x] `src/types/next-auth.d.ts` — extiende tipos de sesión/JWT con `rol` y `socioId`
+- [x] `src/app/api/auth/[...nextauth]/route.ts` — handler GET/POST
+- [x] `src/lib/session.ts` — helpers `getSession`, `requireUser`, `requireAdmin`, `requireSocio`
+- [x] `src/components/SessionProvider.tsx` — provider cliente
+- Página de login en `/login` (se crea en Etapa 4)
+
+### Etapa 4 — Layout y tema
+- [x] `src/app/globals.css` — clases utilitarias `.btn-primary`, `.btn-secondary`, `.btn-mp`, `.card`, `.input`, `.label`, `.badge`
+- [x] `src/components/Escudo.tsx` — logo/diana SVG en colores institucionales (reemplazable por el escudo oficial)
+- [x] `src/app/layout.tsx` — layout raíz con SessionProvider y metadata
+- [x] `src/components/Header.tsx` — header con escudo, navegación por rol y botón salir
+- [x] `src/app/page.tsx` — raíz: redirige a /login, /admin o /socio según sesión/rol
+- [x] `src/app/login/page.tsx` + `src/app/login/LoginForm.tsx` — login con diseño institucional
+- [x] `src/components/EstadoBadge.tsx` — `CuotaBadge` y `SocioBadge`
+
+### Etapa 5 — Panel de administrador
+Servicios / lógica:
+- [x] `src/lib/cuotas.ts` — `actualizarCuotasVencidas`, `cuotasImpagasDeSocio`, `saldoDeSocio`, `marcarCuotaPagada`
+- [x] `src/lib/validators.ts` — Zod: `socioCreateSchema`, `socioUpdateSchema`, `cuotaCreateSchema`, `generarCuotasSchema`
+- [x] `src/lib/socios.ts` — `crearSocio` (crea User+Socio, número correlativo), `actualizarSocio`, `eliminarSocio`
+
+API routes:
+- [x] `GET/POST /api/socios` — listar / crear socio (admin)
+- [x] `GET/PUT/DELETE /api/socios/[id]` — detalle / editar / eliminar (admin)
+- [x] `POST /api/cuotas/generar` — genera cuotas del período para socios activos (sin duplicar)
+- [x] `POST /api/cuotas/[id]/pagar` — pago manual efectivo/transferencia (admin)
+
+Páginas (`/admin/*`):
+- [x] `layout.tsx` (protegido con `requireAdmin`), `page.tsx` (dashboard con métricas y recaudación)
+- [x] `socios/page.tsx` (listado), `socios/nuevo/page.tsx`, `socios/[id]/page.tsx` (detalle + edición + historial de cuotas)
+- [x] `cuotas/page.tsx` (generar cuotas + vista de morosos)
+
+Componentes:
+- [x] `SocioForm.tsx` (alta/edición), `GenerarCuotasForm.tsx`, `AccionesCuota.tsx` (`RegistrarPagoBtn`, `EliminarSocioBtn`)
+
+### Etapa 6 — Panel de socio
+- [x] `src/components/PagarCuotaBtn.tsx` — llama a `POST /api/pagos` y redirige al `initPoint` de Mercado Pago
+- [x] `src/app/socio/layout.tsx` — protegido con `requireSocio`, header con links Inicio / Mis pagos
+- [x] `src/app/socio/page.tsx` — saludo, recordatorio destacado de cuotas impagas con saldo total, lista de cuotas pendientes con botón de pago; mensaje "al día" si no debe nada
+- [x] `src/app/socio/pagos/page.tsx` — historial completo, total abonado, botón de pago en las impagas
+
+### Etapa 7 — Integración Mercado Pago
+- [x] `src/lib/mercadopago.ts` — SDK v2 (`MercadoPagoConfig`, `Preference`, `Payment`); `crearPreferenciaPago`, `obtenerPago`, `mercadoPagoConfigurado()` (detecta token placeholder)
+- [x] `POST /api/pagos` — crea preferencia para una cuota. **Seguridad**: el socio solo paga cuotas propias (verifica `socioId`); admin puede pagar cualquiera. Rechaza cuotas ya pagadas. Devuelve `{ initPoint }`. Si MP no está configurado, responde 503 con mensaje claro.
+- [x] `POST /api/pagos/webhook` — recibe notificación de MP, consulta el pago, y si está `approved` marca la cuota PAGADA vía `external_reference` (= cuota.id). Idempotente (no re-marca). GET de validación.
+- [x] `src/app/socio/pago/resultado/page.tsx` — página de retorno (éxito / pendiente / error) según `?estado=`
+- Configuración: `back_urls` y `notification_url` usan `APP_URL`. Credenciales en `MP_ACCESS_TOKEN`.
+- **Pendiente del usuario**: cargar credenciales reales de Mercado Pago y, para probar webhooks en local, exponer la app con una URL pública (ej. túnel) y setear `APP_URL`.
+
+**Ajuste (token de prueba cargado):**
+- `MP_ACCESS_TOKEN` de prueba (TEST-) configurado en `.env`.
+- `crearPreferenciaPago` ahora detecta si `APP_URL` es local (`esUrlLocal`). En local **omite** `notification_url` y `auto_return` porque Mercado Pago los rechaza al no ser accesibles desde internet. En producción (URL pública) se activan solos.
+- Verificado: la preferencia se crea OK y devuelve `initPoint` (link de checkout real de MP Argentina).
+- Recordatorio: el webhook automático solo llegará cuando `APP_URL` sea pública. En local, el pago se puede confirmar manualmente desde el panel del admin.
+
+### Etapa 8 — Módulo alquiler de líneas de tiro (preparado para el futuro)
+- [x] `src/lib/alquileres.ts` — `lineasActivas`, `lineaDisponible` (chequeo de solapamiento), `crearReserva` (estado RESERVADO)
+- [x] `src/app/socio/alquiler/page.tsx` — vista preliminar "próximamente" que lista líneas activas; botón "Reservar" deshabilitado
+- [x] Link "Alquiler de líneas" agregado al menú del socio
+- Cobro futuro: reutilizar `crearPreferenciaPago` con `external_reference` del alquiler. Falta: calendario/turnos, confirmación y webhook para alquileres.
+
+### Etapa 9 — Seed y verificación
+- [x] `prisma/seed.ts` — crea admin, 3 socios de ejemplo (con cuota pagada del mes pasado + pendiente del actual) y 4 líneas de tiro
+- [x] `npm run db:seed` ejecutado con éxito
+- [x] `npm run build` compila sin errores (17 rutas generadas)
+- [x] Servidor `npm run start` verificado: raíz redirige a /login (307), /login responde 200, webhook 200
+- [x] Login probado por API: sesión devuelve `rol: "ADMIN"` correctamente
+
+**Credenciales de prueba (seed):**
+- Admin: `admin@tirofederalrufino.com` / `admin123`
+- Socios: `juan@example.com`, `maria@example.com`, `carlos@example.com` / `socio123`
+
+### Etapa 10 — Cambio de contraseña del socio
+- [x] `POST /api/perfil/password` — el usuario logueado cambia su contraseña. Valida contraseña actual con bcrypt, exige nueva de mín. 6 caracteres y confirmación. Zod para validación.
+- [x] `src/components/CambiarPasswordForm.tsx` — formulario (actual, nueva, repetir) con mensajes de éxito/error
+- [x] `src/app/socio/perfil/page.tsx` — "Mi cuenta": muestra datos del socio + formulario de cambio de contraseña
+- [x] Link "Mi cuenta" agregado al menú del socio
+- Nota: los datos personales del socio los edita solo el admin; el socio solo cambia su contraseña.
+
+### Cómo correr el proyecto
+```bash
+npm install
+npx prisma generate      # genera el cliente (el postinstall puede no correr solo)
+npx prisma db push       # crea/actualiza la base SQLite
+npm run db:seed          # datos de ejemplo (opcional)
+npm run dev              # desarrollo en http://localhost:3000
+```
+
+### Pendientes / próximos pasos
+- Cargar credenciales reales de Mercado Pago en `MP_ACCESS_TOKEN` y setear `APP_URL` con la URL pública para los webhooks.
+- Escudo/logo oficial del club (reemplazar `Escudo.tsx`) y ajustar colores si hay manual de marca.
+- Migrar a PostgreSQL para producción (cambiar `datasource` y convertir estados String a enum si se desea).
+- Completar el módulo de alquiler de líneas (calendario de turnos, reserva y cobro).
+- Recordatorios automáticos por email/WhatsApp de cuotas por vencer (hoy el aviso es dentro de la app).
+
+---
+
+### Etapa 11 — Preparación para producción (deploy)
+Decisión: **PostgreSQL en todos lados** (local y producción). Prisma ya no permite `env()` en `provider`.
+- [x] `schema.prisma` → `provider = "postgresql"` (fijo)
+- [x] `.env` local → `DATABASE_URL` apunta a Neon (Postgres). Base SQLite (`prisma/dev.db`) eliminada.
+- [x] `.env.example` → documenta variables para local y producción
+- [x] `package.json` → `engines.node >=18.18`; scripts `db:setup` (push+seed) y `seed:admin`
+- [x] `prisma/seed-admin.ts` → seed de producción: crea SOLO el admin desde `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NOMBRE` (upsert, no pisa)
+- [x] Fix tipos en `src/lib/mercadopago.ts` → `body: PreferenceRequest` (import de `mercadopago/dist/clients/preference/commonTypes`)
+- [x] `npm run build` de producción OK (21 rutas)
+- [x] `GUIA_DEPLOY.md` → guía paso a paso desde cero (Neon → GitHub → Vercel → URLs → tablas → webhook MP)
+
+**Datos para el deploy:**
+- `NEXTAUTH_SECRET` de producción generado (ver `GUIA_DEPLOY.md`, Parte 4).
+- Stack de hosting: Vercel (web) + Neon (PostgreSQL).
+- Crear tablas en Neon: `npm run db:push`; crear admin: `npm run seed:admin`.
+- Webhook de Mercado Pago: `https://<dominio>/api/pagos/webhook`.
+
+**Pendiente del usuario** (requiere crear cuentas, no automatizable desde acá):
+1. Crear cuenta en Neon y pegar `DATABASE_URL` en `.env`.
+2. Crear cuenta en GitHub y subir el repo.
+3. Crear cuenta en Vercel, importar el repo y cargar variables de entorno.
+4. Ajustar `NEXTAUTH_URL` y `APP_URL` con el dominio de Vercel.
+5. Configurar el webhook en el panel de Mercado Pago.

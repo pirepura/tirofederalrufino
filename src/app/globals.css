@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --tiro-celeste: #5fa8e0;
+  --tiro-azul: #1e4c8a;
+  --tiro-azul-oscuro: #132f55;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+body {
+  background-color: #f4f7fb;
+  color: #132f55;
+}
+
+/* Componentes reutilizables */
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-tiro-azul px-4 py-2 font-semibold text-white transition hover:bg-tiro-azulOscuro focus:outline-none focus:ring-2 focus:ring-tiro-celeste disabled:opacity-50;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-tiro-azul bg-white px-4 py-2 font-semibold text-tiro-azul transition hover:bg-tiro-gris focus:outline-none focus:ring-2 focus:ring-tiro-celeste disabled:opacity-50;
+  }
+
+  .btn-mp {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-tiro-celeste px-4 py-2 font-semibold text-white transition hover:brightness-95 focus:outline-none focus:ring-2 focus:ring-tiro-azul disabled:opacity-50;
+  }
+
+  .card {
+    @apply rounded-xl border border-slate-200 bg-white p-6 shadow-sm;
+  }
+
+  .input {
+    @apply w-full rounded-lg border border-slate-300 px-3 py-2 text-tiro-azulOscuro outline-none transition focus:border-tiro-celeste focus:ring-2 focus:ring-tiro-celeste/40;
+  }
+
+  .label {
+    @apply mb-1 block text-sm font-medium text-tiro-grisTexto;
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+}

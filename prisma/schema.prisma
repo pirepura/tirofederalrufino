@@ -1,0 +1,137 @@
+// Esquema de base de datos — Tiro Federal Rufino
+// Motor: SQLite en desarrollo (migrable a PostgreSQL en producción)
+//
+// Nota: SQLite no soporta enums nativos de Prisma. Los estados se guardan
+// como String y se validan a nivel de aplicación con las constantes de
+// src/lib/constants.ts. Al migrar a PostgreSQL se pueden convertir a enum.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  // PostgreSQL para producción (Neon) y también en local.
+  // La conexión concreta se define en DATABASE_URL (.env).
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Usuarios y autenticación
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  nombre       String
+  rol          String   @default("SOCIO") // ADMIN | SOCIO
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relación 1:1 con el perfil de socio (cuando el rol es SOCIO)
+  socio Socio?
+}
+
+// ---------------------------------------------------------------------------
+// Socios
+// ---------------------------------------------------------------------------
+
+model Socio {
+  id            String   @id @default(cuid())
+  // Número de socio (correlativo, visible para el club)
+  numeroSocio   Int      @unique
+  dni           String   @unique
+  nombre        String
+  apellido      String
+  telefono      String?
+  direccion     String?
+  fechaAlta     DateTime @default(now())
+  estado        String   @default("ACTIVO") // ACTIVO | INACTIVO | SUSPENDIDO
+  // Categoría de cuota (permite distintos montos a futuro)
+  categoria     String   @default("General")
+  cuotaMensual  Float    @default(0)
+  observaciones String?
+
+  // Cuenta de acceso del socio
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  cuotas     Cuota[]
+  alquileres AlquilerLinea[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// Cuotas y pagos
+// ---------------------------------------------------------------------------
+
+model Cuota {
+  id      String @id @default(cuid())
+  socioId String
+  socio   Socio  @relation(fields: [socioId], references: [id], onDelete: Cascade)
+
+  // Período que cubre la cuota (mes/año)
+  periodoMes       Int // 1-12
+  periodoAnio      Int
+  descripcion      String   @default("Cuota mensual")
+  monto            Float
+  fechaVencimiento DateTime
+  estado           String   @default("PENDIENTE") // PENDIENTE | PAGADA | VENCIDA | ANULADA
+
+  // Datos del pago (si fue pagada)
+  fechaPago  DateTime?
+  metodoPago String? // "mercadopago" | "efectivo" | "transferencia"
+
+  // Referencias de Mercado Pago
+  mpPreferenceId String?
+  mpPaymentId    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Evita duplicar la cuota de un mismo período para el mismo socio
+  @@unique([socioId, periodoMes, periodoAnio])
+}
+
+// ---------------------------------------------------------------------------
+// Módulo de alquiler de líneas de tiro (PREPARADO PARA EL FUTURO)
+// La estructura está definida para desarrollo posterior. La UI completa
+// se implementará más adelante.
+// ---------------------------------------------------------------------------
+
+model LineaTiro {
+  id          String  @id @default(cuid())
+  numero      Int     @unique
+  nombre      String
+  descripcion String?
+  activa      Boolean @default(true)
+  // Precio por turno/hora
+  precioTurno Float   @default(0)
+
+  alquileres AlquilerLinea[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AlquilerLinea {
+  id      String    @id @default(cuid())
+  socioId String
+  socio   Socio     @relation(fields: [socioId], references: [id], onDelete: Cascade)
+  lineaId String
+  linea   LineaTiro @relation(fields: [lineaId], references: [id], onDelete: Cascade)
+
+  fechaInicio DateTime
+  fechaFin    DateTime
+  monto       Float
+  estado      String   @default("RESERVADO") // RESERVADO | CONFIRMADO | CANCELADO | COMPLETADO
+
+  mpPreferenceId String?
+  mpPaymentId    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
