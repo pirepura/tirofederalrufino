@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { ESTADO_CUOTA, METODO_PAGO } from "@/lib/constants";
-import { obtenerPago } from "@/lib/mercadopago";
+import { obtenerPago, validarFirmaWebhook } from "@/lib/mercadopago";
 import { marcarCuotaPagada } from "@/lib/cuotas";
 
 // POST /api/pagos/webhook — recibe notificaciones (IPN/Webhooks) de Mercado Pago.
@@ -30,6 +30,18 @@ export async function POST(req: Request) {
 
     if (!paymentId) {
       return NextResponse.json({ ok: true, ignored: true });
+    }
+
+    // Validar la firma del webhook (si MP_WEBHOOK_SECRET está configurado).
+    // Esto garantiza que la notificación proviene realmente de Mercado Pago.
+    const firmaValida = validarFirmaWebhook({
+      xSignature: req.headers.get("x-signature"),
+      xRequestId: req.headers.get("x-request-id"),
+      dataId: String(paymentId),
+    });
+    if (!firmaValida) {
+      console.warn("Webhook de Mercado Pago con firma inválida. Ignorado.");
+      return NextResponse.json({ error: "Firma inválida" }, { status: 401 });
     }
 
     const pago = await obtenerPago(String(paymentId));

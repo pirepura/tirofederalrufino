@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { MercadoPagoConfig, Preference, Payment } from "mercadopago";
 import type { PreferenceRequest } from "mercadopago/dist/clients/preference/commonTypes";
 
@@ -93,4 +94,61 @@ export async function obtenerPago(paymentId: string) {
   const config = getConfig();
   const payment = new Payment(config);
   return payment.get({ id: paymentId });
+}
+
+// ---------------------------------------------------------------------------
+// Validación de la firma del webhook de Mercado Pago.
+//
+// Mercado Pago firma cada notificación con HMAC-SHA256. Envía dos headers:
+//   x-signature: "ts=<timestamp>,v1=<hash>"
+//   x-request-id: <id de la petición>
+// El hash se calcula sobre el "manifest":
+//   id:<data.id>;request-id:<x-request-id>;ts:<ts>;
+// usando MP_WEBHOOK_SECRET como clave.
+//
+// Devuelve:
+//   - true  si la firma es válida
+//   - true  si no hay MP_WEBHOOK_SECRET configurado (validación desactivada)
+//   - false si hay secret pero la firma no coincide
+// ---------------------------------------------------------------------------
+export function validarFirmaWebhook(params: {
+  xSignature: string | null;
+  xRequestId: string | null;
+  dataId: string | null;
+}): boolean {
+  const secret = process.env.MP_WEBHOOK_SECRET;
+
+  // Si no hay secret configurado, no validamos (compatibilidad hacia atrás).
+  if (!secret) return true;
+
+  const { xSignature, xRequestId, dataId } = params;
+  if (!xSignature || !dataId) return false;
+
+  // Parsear "ts=...,v1=..."
+  let ts = "";
+  let v1 = "";
+  for (const parte of xSignature.split(",")) {
+    const [clave, valor] = parte.split("=").map((s) => s.trim());
+    if (clave === "ts") ts = valor;
+    if (clave === "v1") v1 = valor;
+  }
+  if (!ts || !v1) return false;
+
+  // Construir el manifest en el formato exacto que espera Mercado Pago.
+  const manifest = `id:${dataId};request-id:${xRequestId ?? ""};ts:${ts};`;
+
+  const hmac = crypto
+    .createHmac("sha256", secret)
+    .update(manifest)
+    .digest("hex");
+
+  // Comparación en tiempo constante para evitar timing attacks.
+  try {
+    return crypto.timingSafeEqual(
+      Buffer.from(hmac, "hex"),
+      Buffer.from(v1, "hex")
+    );
+  } catch {
+    return false;
+  }
 }

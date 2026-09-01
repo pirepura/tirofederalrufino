@@ -191,3 +191,19 @@ Decisión: **PostgreSQL en todos lados** (local y producción). Prisma ya no per
 3. Crear cuenta en Vercel, importar el repo y cargar variables de entorno.
 4. Ajustar `NEXTAUTH_URL` y `APP_URL` con el dominio de Vercel.
 5. Configurar el webhook en el panel de Mercado Pago.
+
+### Etapa 12 — Deploy realizado + validación de firma del webhook
+- [x] Base Neon creada, tablas (`db push`) y admin (`seed:admin`) cargados. Admin: `admin@tirofederalrufino.com`.
+- [x] Código subido a GitHub: `pirepura/tirofederalrufino` (público). `.env` NO subido (verificado).
+- [x] Deploy en Vercel OK. URL pública: **https://tirofederalrufino.vercel.app**
+- [x] Variables en Vercel: DATABASE_URL, NEXTAUTH_SECRET, NEXTAUTH_URL, APP_URL, MP_ACCESS_TOKEN, CUOTA_MENSUAL_DEFAULT.
+- [x] Login admin verificado contra la web pública (rol ADMIN OK).
+- [x] Webhook de Mercado Pago registrado.
+- [x] Validación de firma del webhook: `validarFirmaWebhook` en `src/lib/mercadopago.ts` (HMAC-SHA256 sobre `id:<data.id>;request-id:<x-request-id>;ts:<ts>;`, comparación en tiempo constante). Nueva var `MP_WEBHOOK_SECRET` (opcional: si vacía, no valida). Webhook devuelve 401 si la firma es inválida.
+- [x] `npm run build` OK.
+
+**Pendiente del usuario:**
+- Cargar `MP_WEBHOOK_SECRET` en Vercel con la clave secreta del webhook y redeploy.
+- Cambiar la contraseña del admin.
+- Revocar el token de GitHub usado para el push (quedó expuesto).
+- Al cobrar en real: reemplazar el `MP_ACCESS_TOKEN` de prueba por el de producción.
