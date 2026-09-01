@@ -14,7 +14,7 @@ export async function PUT(
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
 
-  const body = await req.json();
+  const body = await req.json().catch(() => ({}));
   const parsed = categoriaSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(

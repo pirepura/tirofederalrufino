@@ -9,13 +9,16 @@ export default async function CategoriasPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-bold text-tiro-azul">Categorías</h1>
+        <h1 className="text-2xl font-bold text-tiro-azul">
+          Categorías y cuotas
+        </h1>
         <p className="text-sm text-tiro-grisTexto">
-          Definí el valor de la cuota de cada categoría. Al cambiar un precio,
-          impacta en las próximas cuotas de todos los socios de esa categoría.
-          Las cuotas ya generadas conservan su monto original.
+          Definí el valor de la cuota de cada categoría. Al cambiar el precio,
+          impacta en las próximas cuotas que generes para los socios de esa
+          categoría.
         </p>
       </div>
+
       <CategoriasManager categorias={categorias} />
     </div>
   );

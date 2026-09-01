@@ -258,3 +258,18 @@ Cambio de diseño: el precio de la cuota ya no se carga por socio; ahora vive en
 - [x] Seed de desarrollo actualizado (crea categorías General/Estudiante y vincula).
 - [x] Build OK. CRUD de categorías probado en local (crear/editar/eliminar).
 - Nota: los 2 socios reales (Luciano, María Soledad) quedaron en "General" $10000. Ajustar el precio real de General cuando corresponda.
+
+### Etapa 17 — Categorías administrables con precio único (rediseño de cuotas)
+Objetivo: el precio de la cuota se define por categoría en un solo lugar; al aumentar, impacta en todos los socios de esa categoría en las cuotas futuras.
+- [x] Modelo `Categoria` {nombre único, cuotaMensual, activa}. `Socio.categoriaId` (relación `categoriaRef`). Se eliminaron los campos legacy `Socio.categoria` (texto) y `Socio.cuotaMensual`.
+- [x] Migración en Neon preservando datos: categoría "General" creada con el precio existente, socios vinculados.
+- [x] `src/lib/categorias.ts`: `listarCategorias`, `categoriasActivas`, `crear/actualizar/eliminarCategoria` (no permite eliminar categoría con socios).
+- [x] API `/api/categorias` (GET/POST) y `/api/categorias/[id]` (PUT/DELETE), solo admin.
+- [x] Pantalla `/admin/categorias` + `CategoriasManager` (alta, editar precio inline, eliminar). Link "Categorías" en el menú.
+- [x] `SocioForm` usa selector de categoría (sin campo de precio). Validadores y `socios.ts` usan `categoriaId`.
+- [x] Generador de cuotas usa `socio.categoriaRef.cuotaMensual`; omite socios sin monto (contador `sinMonto`).
+- [x] `aprobarSolicitud(solicitudId, categoriaId)`: al aprobar se elige la categoría. `AccionesSolicitud` con selector.
+- [x] Páginas admin muestran `categoriaRef.nombre` y su precio.
+- Decisión aplicada: las cuotas ya generadas conservan su monto histórico; el nuevo precio aplica solo a las cuotas futuras.
+- [x] Probado en local contra Neon: crear categoría, editar precio de "General" a $12000 → generar cuotas dio $12000 a los socios General y $5000 al socio de categoría "Menor". Cuotas de prueba eliminadas.
+- Nota: quedó creada la categoría "Estudiante" ($4000) durante la prueba (se puede borrar desde el panel si no se usa).
