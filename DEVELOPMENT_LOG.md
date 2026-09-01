@@ -207,3 +207,9 @@ Decisión: **PostgreSQL en todos lados** (local y producción). Prisma ya no per
 - Cambiar la contraseña del admin.
 - Revocar el token de GitHub usado para el push (quedó expuesto).
 - Al cobrar en real: reemplazar el `MP_ACCESS_TOKEN` de prueba por el de producción.
+
+### Etapa 13 — Cambio de contraseña del admin
+- [x] `src/app/admin/perfil/page.tsx` — "Mi cuenta" del admin: datos + formulario de cambio de contraseña
+- [x] Reutiliza `CambiarPasswordForm` y la API `POST /api/perfil/password` (que ya sirve para cualquier usuario logueado, valida contraseña actual)
+- [x] Link "Mi cuenta" agregado al menú del admin
+- [x] `npm run build` OK

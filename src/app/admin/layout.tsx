@@ -5,6 +5,7 @@ const adminLinks = [
   { href: "/admin", label: "Inicio" },
   { href: "/admin/socios", label: "Socios" },
   { href: "/admin/cuotas", label: "Cuotas" },
+  { href: "/admin/perfil", label: "Mi cuenta" },
 ];
 
 export default async function AdminLayout({
