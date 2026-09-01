@@ -4,7 +4,7 @@ import { ROLES } from "@/lib/constants";
 import { categoriaSchema } from "@/lib/validators";
 import { listarCategorias, crearCategoria } from "@/lib/categorias";
 
-// GET /api/categorias — lista categorías (solo admin)
+// GET /api/categorias — lista categorías (admin)
 export async function GET() {
   const session = await getSession();
   if (session?.user.rol !== ROLES.ADMIN) {
@@ -14,14 +14,13 @@ export async function GET() {
   return NextResponse.json(categorias);
 }
 
-// POST /api/categorias — crea una categoría (solo admin)
+// POST /api/categorias — crea categoría (admin)
 export async function POST(req: Request) {
   const session = await getSession();
   if (session?.user.rol !== ROLES.ADMIN) {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
-
-  const body = await req.json().catch(() => ({}));
+  const body = await req.json();
   const parsed = categoriaSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
@@ -29,7 +28,6 @@ export async function POST(req: Request) {
       { status: 400 }
     );
   }
-
   try {
     const cat = await crearCategoria(parsed.data);
     return NextResponse.json(cat, { status: 201 });

@@ -12,19 +12,16 @@ type Categoria = {
   _count: { socios: number };
 };
 
-export default function CategoriasManager({
+export default function CategoriasAdmin({
   categorias,
 }: {
   categorias: Categoria[];
 }) {
   const router = useRouter();
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  // Alta
   const [nombre, setNombre] = useState("");
   const [monto, setMonto] = useState("");
-
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   // Edición inline
   const [editId, setEditId] = useState<string | null>(null);
   const [editNombre, setEditNombre] = useState("");
@@ -37,17 +34,28 @@ export default function CategoriasManager({
     const res = await fetch("/api/categorias", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nombre, cuotaMensual: Number(monto), activa: true }),
+      body: JSON.stringify({
+        nombre,
+        cuotaMensual: Number(monto),
+        activa: true,
+      }),
     });
     setLoading(false);
     if (!res.ok) {
       const b = await res.json().catch(() => ({}));
-      setError(b.error ?? "Error al crear");
+      setError(b.error ?? "No se pudo crear");
       return;
     }
     setNombre("");
     setMonto("");
     router.refresh();
+  }
+
+  function empezarEdicion(c: Categoria) {
+    setEditId(c.id);
+    setEditNombre(c.nombre);
+    setEditMonto(String(c.cuotaMensual));
+    setError("");
   }
 
   async function guardarEdicion(id: string) {
@@ -65,7 +73,7 @@ export default function CategoriasManager({
     setLoading(false);
     if (!res.ok) {
       const b = await res.json().catch(() => ({}));
-      setError(b.error ?? "Error al guardar");
+      setError(b.error ?? "No se pudo guardar");
       return;
     }
     setEditId(null);
@@ -75,12 +83,10 @@ export default function CategoriasManager({
   async function eliminar(id: string) {
     if (!confirm("¿Eliminar esta categoría?")) return;
     setError("");
-    setLoading(true);
     const res = await fetch(`/api/categorias/${id}`, { method: "DELETE" });
-    setLoading(false);
     if (!res.ok) {
       const b = await res.json().catch(() => ({}));
-      setError(b.error ?? "Error al eliminar");
+      setError(b.error ?? "No se pudo eliminar");
       return;
     }
     router.refresh();
@@ -94,35 +100,7 @@ export default function CategoriasManager({
         </div>
       )}
 
-      {/* Alta de categoría */}
-      <form onSubmit={crear} className="card flex flex-wrap items-end gap-3">
-        <div className="flex-1 min-w-[160px]">
-          <label className="label">Nueva categoría</label>
-          <input
-            className="input"
-            value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
-            placeholder="Ej: General, Estudiante, Jubilado"
-            required
-          />
-        </div>
-        <div className="w-40">
-          <label className="label">Cuota mensual ($)</label>
-          <input
-            type="number"
-            min={0}
-            className="input"
-            value={monto}
-            onChange={(e) => setMonto(e.target.value)}
-            required
-          />
-        </div>
-        <button className="btn-primary" disabled={loading}>
-          Agregar
-        </button>
-      </form>
-
-      {/* Listado */}
+      {/* Tabla de categorías */}
       <div className="card overflow-x-auto p-0">
         <table className="w-full text-left text-sm">
           <thead className="border-b bg-tiro-gris text-tiro-azul">
@@ -136,8 +114,8 @@ export default function CategoriasManager({
           <tbody>
             {categorias.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-tiro-grisTexto">
-                  Todavía no hay categorías.
+                <td colSpan={4} className="px-4 py-4 text-center text-tiro-grisTexto">
+                  No hay categorías. Creá la primera abajo.
                 </td>
               </tr>
             ) : (
@@ -156,7 +134,7 @@ export default function CategoriasManager({
                         <input
                           type="number"
                           min={0}
-                          className="input w-32"
+                          className="input"
                           value={editMonto}
                           onChange={(e) => setEditMonto(e.target.value)}
                         />
@@ -181,24 +159,20 @@ export default function CategoriasManager({
                   ) : (
                     <>
                       <td className="px-4 py-3 font-medium">{c.nombre}</td>
-                      <td className="px-4 py-3">{formatearPesos(c.cuotaMensual)}</td>
+                      <td className="px-4 py-3">
+                        {formatearPesos(c.cuotaMensual)}
+                      </td>
                       <td className="px-4 py-3">{c._count.socios}</td>
                       <td className="px-4 py-3 text-right">
                         <button
                           className="mr-3 text-sm font-medium text-tiro-azul hover:underline"
-                          onClick={() => {
-                            setEditId(c.id);
-                            setEditNombre(c.nombre);
-                            setEditMonto(String(c.cuotaMensual));
-                            setError("");
-                          }}
+                          onClick={() => empezarEdicion(c)}
                         >
-                          Editar precio
+                          Editar
                         </button>
                         <button
                           className="text-sm font-medium text-red-600 hover:underline"
                           onClick={() => eliminar(c.id)}
-                          disabled={loading}
                         >
                           Eliminar
                         </button>
@@ -211,6 +185,41 @@ export default function CategoriasManager({
           </tbody>
         </table>
       </div>
+
+      {/* Formulario nueva categoría */}
+      <form onSubmit={crear} className="card space-y-3">
+        <h2 className="text-sm font-semibold text-tiro-azul">
+          Nueva categoría
+        </h2>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="sm:col-span-1">
+            <label className="label">Nombre</label>
+            <input
+              className="input"
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              placeholder="Ej: General, Estudiante, Jubilado"
+              required
+            />
+          </div>
+          <div>
+            <label className="label">Cuota mensual ($)</label>
+            <input
+              type="number"
+              min={0}
+              className="input"
+              value={monto}
+              onChange={(e) => setMonto(e.target.value)}
+              required
+            />
+          </div>
+          <div className="flex items-end">
+            <button type="submit" className="btn-primary" disabled={loading}>
+              Agregar categoría
+            </button>
+          </div>
+        </div>
+      </form>
     </div>
   );
 }

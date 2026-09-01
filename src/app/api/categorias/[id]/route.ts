@@ -4,7 +4,7 @@ import { ROLES } from "@/lib/constants";
 import { categoriaSchema } from "@/lib/validators";
 import { actualizarCategoria, eliminarCategoria } from "@/lib/categorias";
 
-// PUT /api/categorias/[id] — actualiza una categoría (solo admin)
+// PUT /api/categorias/[id] — actualiza (admin)
 export async function PUT(
   req: Request,
   { params }: { params: { id: string } }
@@ -13,8 +13,7 @@ export async function PUT(
   if (session?.user.rol !== ROLES.ADMIN) {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
-
-  const body = await req.json().catch(() => ({}));
+  const body = await req.json();
   const parsed = categoriaSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
@@ -22,7 +21,6 @@ export async function PUT(
       { status: 400 }
     );
   }
-
   try {
     const cat = await actualizarCategoria(params.id, parsed.data);
     return NextResponse.json(cat);
@@ -32,7 +30,7 @@ export async function PUT(
   }
 }
 
-// DELETE /api/categorias/[id] — elimina una categoría (solo admin, si no tiene socios)
+// DELETE /api/categorias/[id] — elimina (admin), si no tiene socios
 export async function DELETE(
   _req: Request,
   { params }: { params: { id: string } }
@@ -41,7 +39,6 @@ export async function DELETE(
   if (session?.user.rol !== ROLES.ADMIN) {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
-
   try {
     await eliminarCategoria(params.id);
     return NextResponse.json({ ok: true });

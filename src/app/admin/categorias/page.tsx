@@ -1,5 +1,5 @@
 import { listarCategorias } from "@/lib/categorias";
-import CategoriasManager from "@/components/CategoriasManager";
+import CategoriasAdmin from "@/components/CategoriasAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -9,17 +9,15 @@ export default async function CategoriasPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-bold text-tiro-azul">
-          Categorías y cuotas
-        </h1>
+        <h1 className="text-2xl font-bold text-tiro-azul">Categorías</h1>
         <p className="text-sm text-tiro-grisTexto">
-          Definí el valor de la cuota de cada categoría. Al cambiar el precio,
-          impacta en las próximas cuotas que generes para los socios de esa
-          categoría.
+          Definí el valor de la cuota de cada categoría. El día que aumente,
+          cambiás el precio acá y se aplica a las cuotas que generes de ahí en
+          adelante para todos los socios de esa categoría.
         </p>
       </div>
 
-      <CategoriasManager categorias={categorias} />
+      <CategoriasAdmin categorias={categorias} />
     </div>
   );
 }

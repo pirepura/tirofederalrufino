@@ -273,3 +273,16 @@ Objetivo: el precio de la cuota se define por categoría en un solo lugar; al au
 - Decisión aplicada: las cuotas ya generadas conservan su monto histórico; el nuevo precio aplica solo a las cuotas futuras.
 - [x] Probado en local contra Neon: crear categoría, editar precio de "General" a $12000 → generar cuotas dio $12000 a los socios General y $5000 al socio de categoría "Menor". Cuotas de prueba eliminadas.
 - Nota: quedó creada la categoría "Estudiante" ($4000) durante la prueba (se puede borrar desde el panel si no se usa).
+
+### Etapa 17 — Categorías como entidad con precio único por categoría
+Objetivo: el precio de la cuota se define por categoría en un solo lugar; al aumentar, se cambia el precio de la categoría y aplica a las cuotas futuras de todos sus socios. Cuotas ya generadas conservan su monto histórico.
+- [x] Modelo `Categoria` {nombre único, cuotaMensual, activa, socios[]}. `Socio.categoriaId` + relación `categoriaRef`. Se eliminaron los campos legacy `Socio.categoria` (texto) y `Socio.cuotaMensual`. Migración de datos en Neon preservando socios existentes.
+- [x] `src/lib/categorias.ts`: `listarCategorias`, `categoriasActivas`, `crearCategoria`, `actualizarCategoria`, `eliminarCategoria` (no elimina si tiene socios). Validador `categoriaSchema`.
+- [x] API `GET/POST /api/categorias` y `PUT/DELETE /api/categorias/[id]` (admin).
+- [x] Pantalla `Admin → Categorías` (`CategoriasAdmin.tsx`): tabla con edición inline de precio, alta y baja. Link en el menú.
+- [x] `SocioForm` usa selector de categoría (sin campo de precio). Validadores y `src/lib/socios.ts` usan `categoriaId`.
+- [x] Generador de cuotas usa el precio actual de la categoría del socio (`categoriaRef.cuotaMensual`); omite socios sin categoría/precio $0.
+- [x] `aprobarSolicitud(solicitudId, categoriaId)`: el admin elige la categoría al aprobar (`AccionesSolicitud` con selector). Páginas de socios/solicitud muestran `categoriaRef`.
+- [x] Eliminado componente duplicado `CategoriasManager.tsx`.
+- [x] `npm run build` OK.
+- Nota: para aumentar la cuota, Admin → Categorías → editar el precio de la categoría. Aplica a las cuotas que se generen después; las ya emitidas mantienen su monto.
