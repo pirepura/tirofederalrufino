@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
-import { ROLES } from "@/lib/constants";
+import { ROLES, ACCION_AUDITORIA } from "@/lib/constants";
 import { categoriaSchema } from "@/lib/validators";
 import { actualizarCategoria, eliminarCategoria } from "@/lib/categorias";
+import { auditarConSesion } from "@/lib/auditoria";
 
 // PUT /api/categorias/[id] — actualiza una categoría (solo admin)
 export async function PUT(
@@ -23,6 +24,12 @@ export async function PUT(
   }
   try {
     const cat = await actualizarCategoria(params.id, parsed.data);
+    await auditarConSesion(session.user, {
+      accion: ACCION_AUDITORIA.CATEGORIA_EDITADA,
+      entidad: "categoria",
+      entidadId: cat.id,
+      detalle: `Categoría editada: ${cat.nombre} ($${cat.cuotaMensual})`,
+    });
     return NextResponse.json(cat);
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Error al actualizar";
@@ -41,6 +48,12 @@ export async function DELETE(
   }
   try {
     await eliminarCategoria(params.id);
+    await auditarConSesion(session.user, {
+      accion: ACCION_AUDITORIA.CATEGORIA_ELIMINADA,
+      entidad: "categoria",
+      entidadId: params.id,
+      detalle: "Categoría eliminada",
+    });
     return NextResponse.json({ ok: true });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Error al eliminar";

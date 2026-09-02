@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
-import { ROLES } from "@/lib/constants";
+import { ROLES, ACCION_AUDITORIA } from "@/lib/constants";
 import { prisma } from "@/lib/db";
 import { informarPagoConComprobante } from "@/lib/cuotas";
+import { auditarConSesion } from "@/lib/auditoria";
 
 // POST /api/cuotas/[id]/comprobante — el socio informa un pago y sube el comprobante.
 // La cuota pasa a EN_REVISION. Solo el socio dueño de la cuota puede hacerlo.
@@ -32,6 +33,12 @@ export async function POST(
       socioId: session.user.socioId,
       dataUrl,
       metodo,
+    });
+    await auditarConSesion(session.user, {
+      accion: ACCION_AUDITORIA.PAGO_INFORMADO,
+      entidad: "cuota",
+      entidadId: params.id,
+      detalle: `Pago informado por el socio (${metodo})`,
     });
     return NextResponse.json({ ok: true });
   } catch (e) {

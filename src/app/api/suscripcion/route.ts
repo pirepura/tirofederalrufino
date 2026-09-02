@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
-import { ROLES, ESTADO_SUSCRIPCION } from "@/lib/constants";
+import { ROLES, ESTADO_SUSCRIPCION, ACCION_AUDITORIA } from "@/lib/constants";
 import { prisma } from "@/lib/db";
 import { crearSuscripcion, mercadoPagoConfigurado } from "@/lib/mercadopago";
+import { auditarConSesion } from "@/lib/auditoria";
 
 // POST /api/suscripcion — el socio activa el débito automático de su cuota.
 // Crea una suscripción (preapproval) con el monto de su categoría y devuelve
@@ -66,6 +67,13 @@ export async function POST() {
         suscripcionMonto: monto,
         // Se marca activa cuando el webhook confirme la autorización
       },
+    });
+
+    await auditarConSesion(session.user, {
+      accion: ACCION_AUDITORIA.DEBITO_ACTIVADO,
+      entidad: "socio",
+      entidadId: socio.id,
+      detalle: `Débito automático solicitado por el socio (monto ${monto})`,
     });
 
     return NextResponse.json({ initPoint: sub.initPoint });

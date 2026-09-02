@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { ESTADO_CUOTA, ESTADO_SUSCRIPCION, METODO_PAGO } from "@/lib/constants";
+import {
+  ESTADO_CUOTA,
+  ESTADO_SUSCRIPCION,
+  METODO_PAGO,
+  ACCION_AUDITORIA,
+} from "@/lib/constants";
 import {
   obtenerPago,
   obtenerSuscripcion,
@@ -11,6 +16,7 @@ import {
   marcarCuotaPagada,
   registrarPagoAutomatico,
 } from "@/lib/cuotas";
+import { registrarAuditoria } from "@/lib/auditoria";
 
 // POST /api/pagos/webhook — recibe notificaciones (IPN/Webhooks) de Mercado Pago.
 // Maneja tres tipos de eventos:
@@ -87,6 +93,14 @@ export async function POST(req: Request) {
             monto: authPay.transaction_amount,
             mpPaymentId: String(authPay.id),
           });
+          await registrarAuditoria({
+            accion: ACCION_AUDITORIA.PAGO_DEBITO_AUTOMATICO,
+            usuarioRol: "SISTEMA",
+            usuarioNombre: "Mercado Pago (débito automático)",
+            entidad: "socio",
+            entidadId: socioId,
+            detalle: `Cobro automático de ${authPay.transaction_amount}`,
+          });
         }
       }
       return NextResponse.json({ ok: true });
@@ -104,6 +118,14 @@ export async function POST(req: Request) {
             METODO_PAGO.MERCADOPAGO,
             String(dataId)
           );
+          await registrarAuditoria({
+            accion: ACCION_AUDITORIA.PAGO_MERCADOPAGO,
+            usuarioRol: "SISTEMA",
+            usuarioNombre: "Mercado Pago",
+            entidad: "cuota",
+            entidadId: cuotaId,
+            detalle: `Pago confirmado por Mercado Pago (${cuota.monto})`,
+          });
         }
       }
       return NextResponse.json({ ok: true });

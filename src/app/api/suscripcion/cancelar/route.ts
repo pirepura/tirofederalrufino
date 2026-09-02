@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
-import { ROLES, ESTADO_SUSCRIPCION } from "@/lib/constants";
+import { ROLES, ESTADO_SUSCRIPCION, ACCION_AUDITORIA } from "@/lib/constants";
 import { prisma } from "@/lib/db";
 import { cancelarSuscripcion } from "@/lib/mercadopago";
+import { auditarConSesion } from "@/lib/auditoria";
 
 // POST /api/suscripcion/cancelar — el socio cancela su débito automático.
 export async function POST() {
@@ -38,6 +39,13 @@ export async function POST() {
       suscripcionEstado: ESTADO_SUSCRIPCION.CANCELADA,
       mpPreapprovalId: null,
     },
+  });
+
+  await auditarConSesion(session.user, {
+    accion: ACCION_AUDITORIA.DEBITO_CANCELADO,
+    entidad: "socio",
+    entidadId: socio.id,
+    detalle: "Débito automático cancelado por el socio",
   });
 
   return NextResponse.json({ ok: true });

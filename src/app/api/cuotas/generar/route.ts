@@ -1,8 +1,15 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
-import { ROLES, ESTADO_SOCIO, ESTADO_CUOTA } from "@/lib/constants";
+import {
+  ROLES,
+  ESTADO_SOCIO,
+  ESTADO_CUOTA,
+  ACCION_AUDITORIA,
+  nombreMes,
+} from "@/lib/constants";
 import { prisma } from "@/lib/db";
 import { generarCuotasSchema } from "@/lib/validators";
+import { auditarConSesion } from "@/lib/auditoria";
 
 // POST /api/cuotas/generar — genera la cuota de un período para todos los
 // socios ACTIVOS que aún no la tengan (solo admin).
@@ -73,6 +80,12 @@ export async function POST(req: Request) {
     });
     creadas++;
   }
+
+  await auditarConSesion(session.user, {
+    accion: ACCION_AUDITORIA.CUOTAS_GENERADAS,
+    entidad: "cuota",
+    detalle: `Generación de cuotas ${nombreMes(periodoMes)} ${periodoAnio}: ${creadas} creada(s), ${omitidas} ya existían.`,
+  });
 
   return NextResponse.json({ creadas, omitidas, sinMonto });
 }

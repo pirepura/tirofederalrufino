@@ -336,3 +336,15 @@ El socio puede activar el débito automático mensual de su cuota desde su panel
 - [x] UI admin: indicador de débito automático (activo / no activo) en el detalle del socio.
 - [x] Build OK. Probado contra la API real de MP con token de prueba: se crea el preapproval y devuelve init_point (verificado y luego cancelado).
 - **Pendiente del usuario**: para que el cobro sea real, cargar credenciales de PRODUCCIÓN de Mercado Pago (hoy hay token TEST). El flujo técnico ya está listo; solo se cambian las credenciales en Vercel.
+
+### Etapa 20 — Sistema de auditoría
+Registro permanente de acciones (quién hizo qué y cuándo) en la base, visible en Admin → Auditoría con filtros.
+- [x] Modelo `RegistroAuditoria` (usuarioId/Nombre/Rol, accion, entidad, entidadId, detalle, createdAt, índices). `prisma db push`.
+- [x] Constantes `ACCION_AUDITORIA` y `ACCION_LABEL`. Helper `src/lib/auditoria.ts`: `registrarAuditoria`, `auditarConSesion`, `listarAuditoria` (filtros por acción/fecha + paginación).
+- [x] Instrumentado admin: crear/editar/eliminar socio, aprobar/rechazar solicitud, generar cuotas, pago manual, eliminar cuota, confirmar/rechazar comprobante, crear/editar/eliminar categoría.
+- [x] Instrumentado socio: informar pago, activar/cancelar débito, cambiar contraseña.
+- [x] Instrumentado sistema (webhook MP): pago por checkout y por débito automático (usuarioRol SISTEMA).
+- [x] Instrumentado login exitoso en `auth.ts` (authorize).
+- [x] Pantalla `/admin/auditoria`: tabla (fecha, usuario+rol, acción, detalle) con filtros por acción y rango de fechas + paginación. Link en el menú admin.
+- [x] Build OK. Probado: login y creación de categoría quedaron registrados con usuario/acción/detalle/fecha correctos. Datos de prueba eliminados.
+- Retención: sin borrado automático (se guardan todos los registros).

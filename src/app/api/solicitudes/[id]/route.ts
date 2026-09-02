@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
-import { ROLES } from "@/lib/constants";
+import { ROLES, ACCION_AUDITORIA } from "@/lib/constants";
 import { aprobarSolicitud, rechazarSolicitud } from "@/lib/solicitudes";
+import { auditarConSesion } from "@/lib/auditoria";
 
 // POST /api/solicitudes/[id] — aprueba o rechaza una solicitud (solo admin).
 // Body: { accion: "aprobar" | "rechazar", motivo?: string }
@@ -20,10 +21,22 @@ export async function POST(
   try {
     if (accion === "aprobar") {
       const user = await aprobarSolicitud(params.id, body?.categoriaId);
+      await auditarConSesion(session.user, {
+        accion: ACCION_AUDITORIA.SOLICITUD_APROBADA,
+        entidad: "solicitud",
+        entidadId: params.id,
+        detalle: `Solicitud aprobada. Socio creado: ${user.nombre}`,
+      });
       return NextResponse.json({ ok: true, socioId: user.socio?.id });
     }
     if (accion === "rechazar") {
       await rechazarSolicitud(params.id, body?.motivo);
+      await auditarConSesion(session.user, {
+        accion: ACCION_AUDITORIA.SOLICITUD_RECHAZADA,
+        entidad: "solicitud",
+        entidadId: params.id,
+        detalle: body?.motivo ? `Solicitud rechazada. Motivo: ${body.motivo}` : "Solicitud rechazada",
+      });
       return NextResponse.json({ ok: true });
     }
     return NextResponse.json({ error: "Acción inválida" }, { status: 400 });

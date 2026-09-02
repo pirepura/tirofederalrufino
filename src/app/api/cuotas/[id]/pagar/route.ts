@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
-import { ROLES, METODO_PAGO } from "@/lib/constants";
+import { ROLES, METODO_PAGO, ACCION_AUDITORIA } from "@/lib/constants";
 import { marcarCuotaPagada } from "@/lib/cuotas";
+import { auditarConSesion } from "@/lib/auditoria";
 
 // POST /api/cuotas/[id]/pagar — registra un pago manual (efectivo/transferencia).
 // Solo admin. Para pagos con Mercado Pago se usa el flujo de /api/pagos.
@@ -21,6 +22,12 @@ export async function POST(
 
   try {
     const cuota = await marcarCuotaPagada(params.id, metodo);
+    await auditarConSesion(session.user, {
+      accion: ACCION_AUDITORIA.PAGO_MANUAL,
+      entidad: "cuota",
+      entidadId: params.id,
+      detalle: `Pago manual (${metodo}) registrado por ${cuota.monto}`,
+    });
     return NextResponse.json(cuota);
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Error al registrar el pago";

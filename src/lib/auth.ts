@@ -2,7 +2,8 @@ import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
-import { ROLES } from "@/lib/constants";
+import { ROLES, ACCION_AUDITORIA } from "@/lib/constants";
+import { registrarAuditoria } from "@/lib/auditoria";
 
 export const authOptions: NextAuthOptions = {
   session: {
@@ -35,6 +36,15 @@ export const authOptions: NextAuthOptions = {
           user.passwordHash
         );
         if (!passwordOk) return null;
+
+        // Registrar el inicio de sesión en la auditoría
+        await registrarAuditoria({
+          accion: ACCION_AUDITORIA.LOGIN,
+          usuarioId: user.id,
+          usuarioNombre: user.nombre ?? user.email,
+          usuarioRol: user.rol,
+          detalle: `Inicio de sesión (${user.email})`,
+        });
 
         return {
           id: user.id,

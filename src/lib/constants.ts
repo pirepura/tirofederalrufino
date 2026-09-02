@@ -47,6 +47,64 @@ export const ESTADO_ALQUILER = {
 } as const;
 export type EstadoAlquiler = (typeof ESTADO_ALQUILER)[keyof typeof ESTADO_ALQUILER];
 
+// Acciones registradas en la auditoría
+export const ACCION_AUDITORIA = {
+  // Sesión
+  LOGIN: "LOGIN",
+  // Socios
+  SOCIO_CREADO: "SOCIO_CREADO",
+  SOCIO_EDITADO: "SOCIO_EDITADO",
+  SOCIO_ELIMINADO: "SOCIO_ELIMINADO",
+  // Solicitudes de inscripción
+  SOLICITUD_APROBADA: "SOLICITUD_APROBADA",
+  SOLICITUD_RECHAZADA: "SOLICITUD_RECHAZADA",
+  // Cuotas
+  CUOTAS_GENERADAS: "CUOTAS_GENERADAS",
+  CUOTA_ELIMINADA: "CUOTA_ELIMINADA",
+  PAGO_MANUAL: "PAGO_MANUAL",
+  PAGO_MERCADOPAGO: "PAGO_MERCADOPAGO",
+  PAGO_DEBITO_AUTOMATICO: "PAGO_DEBITO_AUTOMATICO",
+  // Comprobantes
+  PAGO_INFORMADO: "PAGO_INFORMADO",
+  COMPROBANTE_CONFIRMADO: "COMPROBANTE_CONFIRMADO",
+  COMPROBANTE_RECHAZADO: "COMPROBANTE_RECHAZADO",
+  // Categorías
+  CATEGORIA_CREADA: "CATEGORIA_CREADA",
+  CATEGORIA_EDITADA: "CATEGORIA_EDITADA",
+  CATEGORIA_ELIMINADA: "CATEGORIA_ELIMINADA",
+  // Débito automático
+  DEBITO_ACTIVADO: "DEBITO_ACTIVADO",
+  DEBITO_CANCELADO: "DEBITO_CANCELADO",
+  // Cuenta
+  PASSWORD_CAMBIADA: "PASSWORD_CAMBIADA",
+} as const;
+export type AccionAuditoria =
+  (typeof ACCION_AUDITORIA)[keyof typeof ACCION_AUDITORIA];
+
+// Etiquetas legibles de cada acción (para mostrar en la pantalla de auditoría)
+export const ACCION_LABEL: Record<string, string> = {
+  LOGIN: "Inicio de sesión",
+  SOCIO_CREADO: "Alta de socio",
+  SOCIO_EDITADO: "Edición de socio",
+  SOCIO_ELIMINADO: "Baja de socio",
+  SOLICITUD_APROBADA: "Solicitud aprobada",
+  SOLICITUD_RECHAZADA: "Solicitud rechazada",
+  CUOTAS_GENERADAS: "Cuotas generadas",
+  CUOTA_ELIMINADA: "Cuota eliminada",
+  PAGO_MANUAL: "Pago manual registrado",
+  PAGO_MERCADOPAGO: "Pago con Mercado Pago",
+  PAGO_DEBITO_AUTOMATICO: "Pago por débito automático",
+  PAGO_INFORMADO: "Pago informado por socio",
+  COMPROBANTE_CONFIRMADO: "Comprobante confirmado",
+  COMPROBANTE_RECHAZADO: "Comprobante rechazado",
+  CATEGORIA_CREADA: "Categoría creada",
+  CATEGORIA_EDITADA: "Categoría editada",
+  CATEGORIA_ELIMINADA: "Categoría eliminada",
+  DEBITO_ACTIVADO: "Débito automático activado",
+  DEBITO_CANCELADO: "Débito automático cancelado",
+  PASSWORD_CAMBIADA: "Contraseña cambiada",
+};
+
 export const METODO_PAGO = {
   MERCADOPAGO: "mercadopago",
   EFECTIVO: "efectivo",

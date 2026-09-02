@@ -202,3 +202,27 @@ model SolicitudInscripcion {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+// ---------------------------------------------------------------------------
+// Auditoría: registro de acciones del sistema (quién hizo qué y cuándo)
+// ---------------------------------------------------------------------------
+
+model RegistroAuditoria {
+  id String @id @default(cuid())
+
+  // Quién realizó la acción (puede ser el sistema, sin usuario)
+  usuarioId     String?
+  usuarioNombre String? // se guarda el nombre/email para conservarlo aunque el usuario se borre
+  usuarioRol    String? // ADMIN | SOCIO | SISTEMA
+
+  accion  String // constante de ACCION_AUDITORIA (ej. SOCIO_CREADO)
+  entidad String? // tipo de entidad afectada (socio, cuota, categoria, etc.)
+  entidadId String? // id de la entidad afectada
+  detalle String? // descripción legible de lo que pasó
+
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([accion])
+  @@index([usuarioId])
+}

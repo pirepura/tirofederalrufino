@@ -3,6 +3,8 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/db";
+import { auditarConSesion } from "@/lib/auditoria";
+import { ACCION_AUDITORIA } from "@/lib/constants";
 
 const schema = z
   .object({
@@ -51,6 +53,13 @@ export async function POST(req: Request) {
   await prisma.user.update({
     where: { id: user.id },
     data: { passwordHash },
+  });
+
+  await auditarConSesion(session.user, {
+    accion: ACCION_AUDITORIA.PASSWORD_CAMBIADA,
+    entidad: "usuario",
+    entidadId: user.id,
+    detalle: "El usuario cambió su contraseña",
   });
 
   return NextResponse.json({ ok: true });

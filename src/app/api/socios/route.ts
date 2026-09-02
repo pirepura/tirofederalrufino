@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
-import { ROLES } from "@/lib/constants";
+import { ROLES, ACCION_AUDITORIA } from "@/lib/constants";
 import { prisma } from "@/lib/db";
 import { socioCreateSchema } from "@/lib/validators";
 import { crearSocio } from "@/lib/socios";
+import { auditarConSesion } from "@/lib/auditoria";
 
 // GET /api/socios — lista todos los socios (solo admin)
 export async function GET() {
@@ -38,6 +39,12 @@ export async function POST(req: Request) {
 
   try {
     const user = await crearSocio(parsed.data);
+    await auditarConSesion(session.user, {
+      accion: ACCION_AUDITORIA.SOCIO_CREADO,
+      entidad: "socio",
+      entidadId: user.socio?.id ?? null,
+      detalle: `Alta de socio: ${parsed.data.nombre} ${parsed.data.apellido} (DNI ${parsed.data.dni})`,
+    });
     return NextResponse.json(user, { status: 201 });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Error al crear el socio";
