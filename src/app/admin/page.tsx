@@ -41,6 +41,10 @@ export default async function AdminDashboard() {
     where: { estado: ESTADO_SOLICITUD.PENDIENTE },
   });
 
+  const pagosAVerificar = await prisma.cuota.count({
+    where: { estado: ESTADO_CUOTA.EN_REVISION },
+  });
+
   const tarjetas = [
     { label: "Socios totales", valor: totalSocios, color: "text-tiro-azul" },
     { label: "Socios activos", valor: sociosActivos, color: "text-green-600" },
@@ -73,6 +77,21 @@ export default async function AdminDashboard() {
             pendiente(s) de revisión.
           </p>
           <p className="text-xs text-amber-700">Hacé clic para revisarlas.</p>
+        </Link>
+      )}
+
+      {pagosAVerificar > 0 && (
+        <Link
+          href="/admin/cuotas"
+          className="block rounded-xl border border-blue-200 bg-blue-50 p-4 transition hover:bg-blue-100"
+        >
+          <p className="text-sm font-semibold text-blue-800">
+            💳 Tenés {pagosAVerificar} pago(s) informado(s) por socios para
+            verificar.
+          </p>
+          <p className="text-xs text-blue-700">
+            Hacé clic para revisar los comprobantes.
+          </p>
         </Link>
       )}
 

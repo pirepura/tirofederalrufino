@@ -96,11 +96,18 @@ model Cuota {
   descripcion      String   @default("Cuota mensual")
   monto            Float
   fechaVencimiento DateTime
-  estado           String   @default("PENDIENTE") // PENDIENTE | PAGADA | VENCIDA | ANULADA
+  estado           String   @default("PENDIENTE") // PENDIENTE | PAGADA | VENCIDA | ANULADA | EN_REVISION
 
   // Datos del pago (si fue pagada)
   fechaPago  DateTime?
   metodoPago String? // "mercadopago" | "efectivo" | "transferencia"
+
+  // Comprobante de pago informado por el socio (pago por otro medio, a verificar).
+  // El archivo se guarda como data URL base64 y se borra al confirmar el pago.
+  comprobanteData        String? // data URL (imagen o PDF)
+  comprobanteTipo        String? // mime type: image/jpeg, application/pdf, etc.
+  comprobanteInformadoEn DateTime?
+  metodoPagoInformado    String? // "transferencia" | "efectivo" | "deposito" | ...
 
   // Referencias de Mercado Pago
   mpPreferenceId String?

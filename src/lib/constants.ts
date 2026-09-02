@@ -19,6 +19,7 @@ export const ESTADO_CUOTA = {
   PAGADA: "PAGADA",
   VENCIDA: "VENCIDA",
   ANULADA: "ANULADA",
+  EN_REVISION: "EN_REVISION", // el socio informó un pago y espera verificación del admin
 } as const;
 export type EstadoCuota = (typeof ESTADO_CUOTA)[keyof typeof ESTADO_CUOTA];
 

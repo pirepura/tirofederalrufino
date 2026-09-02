@@ -313,3 +313,14 @@ Objetivo: el precio de la cuota se define por categoría en un solo lugar; al au
 - [x] `aprobarSolicitud(solicitudId, categoriaId)` + `AccionesSolicitud` con selector de categoría al aprobar.
 - [x] Verificado en local: generación de cuotas respeta el precio de cada categoría (General $10000, Menor $2500).
 - Nota: el admin cambió su contraseña (correcto). Para tests internos se usó un admin temporal, ya eliminado.
+
+### Etapa 18 — Comprobante de pago informado por el socio
+El socio puede informar que pagó por otro medio (transferencia, etc.) y subir el comprobante. El admin verifica y confirma o rechaza.
+- [x] Estado `EN_REVISION` en `ESTADO_CUOTA`. Campos nuevos en `Cuota`: `comprobanteData` (data URL base64), `comprobanteTipo`, `comprobanteInformadoEn`, `metodoPagoInformado`. `prisma db push` en Neon.
+- [x] `src/lib/cuotas.ts`: `informarPagoConComprobante` (valida propiedad, tipo imagen/PDF, máx 4 MB → cuota EN_REVISION), `resolverPagoInformado` (aprobar → PAGADA con método informado + borra comprobante; rechazar → vuelve a PENDIENTE/VENCIDA y limpia), `cuotasEnRevision`.
+- [x] API socio: `POST /api/cuotas/[id]/comprobante` (solo dueño). API compartida: `GET /api/cuotas/[id]/comprobante` (admin o dueño, devuelve el archivo). API admin: `POST /api/cuotas/[id]/resolver`.
+- [x] UI socio: `InformarPagoBtn` (elegir medio + subir imagen/PDF con validación) en cada cuota impaga del panel; sección "Pagos informados (en revisión)".
+- [x] UI admin: sección "Pagos a verificar" en `/admin/cuotas` con `RevisarPagoBtn` (ver comprobante, confirmar, rechazar); aviso en el dashboard.
+- [x] `CuotaBadge`: estado EN_REVISION en azul con etiqueta "EN REVISIÓN".
+- [x] Build OK. Circuito probado en local: informar → EN_REVISION → admin ve comprobante → confirmar → PAGADA + comprobante borrado (GET devuelve 404). Datos de prueba eliminados.
+- Decisión aplicada: el archivo del comprobante se borra al confirmar el pago (no se acumula). Queda registro del pago (fecha, monto, método).

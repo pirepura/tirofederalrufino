@@ -54,3 +54,117 @@ export async function marcarCuotaPagada(
 export async function eliminarCuota(cuotaId: string) {
   return prisma.cuota.delete({ where: { id: cuotaId } });
 }
+
+// Tamaño máximo del comprobante (en bytes del data URL). ~4 MB.
+const MAX_COMPROBANTE_BYTES = 4 * 1024 * 1024;
+const TIPOS_COMPROBANTE_VALIDOS = ["image/", "application/pdf"];
+
+// El socio informa que pagó por otro medio y adjunta el comprobante.
+// La cuota pasa a EN_REVISION hasta que el admin lo verifique.
+export async function informarPagoConComprobante(params: {
+  cuotaId: string;
+  socioId: string;
+  dataUrl: string;
+  metodo: string;
+}) {
+  const cuota = await prisma.cuota.findUnique({
+    where: { id: params.cuotaId },
+  });
+  if (!cuota) throw new Error("Cuota no encontrada");
+
+  // Seguridad: el socio solo puede informar pagos de sus propias cuotas.
+  if (cuota.socioId !== params.socioId) {
+    throw new Error("No autorizado");
+  }
+
+  if (cuota.estado === ESTADO_CUOTA.PAGADA) {
+    throw new Error("Esta cuota ya está pagada");
+  }
+  if (cuota.estado === ESTADO_CUOTA.EN_REVISION) {
+    throw new Error("Ya informaste un pago para esta cuota; está en revisión");
+  }
+
+  // Validar el comprobante
+  if (!params.dataUrl || !params.dataUrl.startsWith("data:")) {
+    throw new Error("Comprobante inválido");
+  }
+  const tipo = params.dataUrl.substring(5, params.dataUrl.indexOf(";"));
+  const tipoOk = TIPOS_COMPROBANTE_VALIDOS.some((t) => tipo.startsWith(t));
+  if (!tipoOk) {
+    throw new Error("El comprobante debe ser una imagen o un PDF");
+  }
+  if (params.dataUrl.length > MAX_COMPROBANTE_BYTES) {
+    throw new Error("El comprobante es demasiado grande (máximo 4 MB)");
+  }
+
+  return prisma.cuota.update({
+    where: { id: params.cuotaId },
+    data: {
+      estado: ESTADO_CUOTA.EN_REVISION,
+      comprobanteData: params.dataUrl,
+      comprobanteTipo: tipo,
+      comprobanteInformadoEn: new Date(),
+      metodoPagoInformado: params.metodo,
+    },
+  });
+}
+
+// El admin resuelve un pago informado: aprobar (queda PAGADA y se borra el
+// comprobante) o rechazar (vuelve a PENDIENTE/VENCIDA, se limpia el comprobante).
+export async function resolverPagoInformado(params: {
+  cuotaId: string;
+  aprobar: boolean;
+}) {
+  const cuota = await prisma.cuota.findUnique({
+    where: { id: params.cuotaId },
+  });
+  if (!cuota) throw new Error("Cuota no encontrada");
+  if (cuota.estado !== ESTADO_CUOTA.EN_REVISION) {
+    throw new Error("La cuota no está en revisión");
+  }
+
+  if (params.aprobar) {
+    // Confirmado: queda pagada con el método informado y se borra el archivo.
+    return prisma.cuota.update({
+      where: { id: params.cuotaId },
+      data: {
+        estado: ESTADO_CUOTA.PAGADA,
+        fechaPago: new Date(),
+        metodoPago: cuota.metodoPagoInformado ?? "transferencia",
+        comprobanteData: null,
+        comprobanteTipo: null,
+      },
+    });
+  }
+
+  // Rechazado: vuelve a impaga. Si ya venció, VENCIDA; si no, PENDIENTE.
+  const ahora = new Date();
+  const nuevoEstado =
+    cuota.fechaVencimiento < ahora
+      ? ESTADO_CUOTA.VENCIDA
+      : ESTADO_CUOTA.PENDIENTE;
+
+  return prisma.cuota.update({
+    where: { id: params.cuotaId },
+    data: {
+      estado: nuevoEstado,
+      comprobanteData: null,
+      comprobanteTipo: null,
+      comprobanteInformadoEn: null,
+      metodoPagoInformado: null,
+    },
+  });
+}
+
+// Cuotas con pago informado pendiente de verificación (para el admin).
+export async function cuotasEnRevision() {
+  return prisma.cuota.findMany({
+    where: { estado: ESTADO_CUOTA.EN_REVISION },
+    orderBy: { comprobanteInformadoEn: "asc" },
+    include: {
+      socio: {
+        select: { id: true, numeroSocio: true, nombre: true, apellido: true },
+      },
+    },
+  });
+}

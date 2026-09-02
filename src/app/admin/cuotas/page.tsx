@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
-import { actualizarCuotasVencidas } from "@/lib/cuotas";
+import { actualizarCuotasVencidas, cuotasEnRevision } from "@/lib/cuotas";
 import {
   ESTADO_CUOTA,
   formatearPesos,
@@ -8,11 +8,15 @@ import {
 } from "@/lib/constants";
 import { CuotaBadge } from "@/components/EstadoBadge";
 import GenerarCuotasForm from "@/components/GenerarCuotasForm";
+import RevisarPagoBtn from "@/components/RevisarPagoBtn";
 
 export const dynamic = "force-dynamic";
 
 export default async function CuotasPage() {
   await actualizarCuotasVencidas();
+
+  // Pagos informados por socios, pendientes de verificación
+  const enRevision = await cuotasEnRevision();
 
   // Últimas cuotas impagas de todo el club (vista de morosos)
   const impagas = await prisma.cuota.findMany({
@@ -29,6 +33,44 @@ export default async function CuotasPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-tiro-azul">Gestión de cuotas</h1>
+
+      {/* Pagos informados a verificar */}
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold text-tiro-azul">
+          Pagos a verificar ({enRevision.length})
+        </h2>
+        {enRevision.length === 0 ? (
+          <div className="card text-center text-tiro-grisTexto">
+            No hay pagos informados pendientes de verificación.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {enRevision.map((c) => (
+              <div
+                key={c.id}
+                className="card flex flex-wrap items-center justify-between gap-4 border-blue-200 bg-blue-50/40"
+              >
+                <div>
+                  <p className="font-semibold text-tiro-azul">
+                    N° {c.socio.numeroSocio} — {c.socio.apellido}, {c.socio.nombre}
+                  </p>
+                  <p className="text-sm text-tiro-grisTexto">
+                    {nombreMes(c.periodoMes)} {c.periodoAnio} ·{" "}
+                    {formatearPesos(c.monto)} · Informado como{" "}
+                    {c.metodoPagoInformado ?? "-"}
+                  </p>
+                  <p className="text-xs text-tiro-grisTexto">
+                    {c.comprobanteInformadoEn
+                      ? `Informado el ${c.comprobanteInformadoEn.toLocaleDateString("es-AR")}`
+                      : ""}
+                  </p>
+                </div>
+                <RevisarPagoBtn cuotaId={c.id} />
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold text-tiro-azul">

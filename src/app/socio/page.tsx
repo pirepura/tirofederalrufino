@@ -5,9 +5,10 @@ import {
   actualizarCuotasVencidas,
   cuotasImpagasDeSocio,
 } from "@/lib/cuotas";
-import { formatearPesos, nombreMes } from "@/lib/constants";
+import { ESTADO_CUOTA, formatearPesos, nombreMes } from "@/lib/constants";
 import { CuotaBadge } from "@/components/EstadoBadge";
 import PagarCuotaBtn from "@/components/PagarCuotaBtn";
+import InformarPagoBtn from "@/components/InformarPagoBtn";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,12 @@ export default async function SocioDashboard() {
   });
   const impagas = await cuotasImpagasDeSocio(socioId);
   const saldo = impagas.reduce((t, c) => t + c.monto, 0);
+
+  // Cuotas con pago informado, esperando verificación del club
+  const enRevision = await prisma.cuota.findMany({
+    where: { socioId, estado: ESTADO_CUOTA.EN_REVISION },
+    orderBy: [{ periodoAnio: "asc" }, { periodoMes: "asc" }],
+  });
 
   return (
     <div className="space-y-6">
@@ -85,7 +92,40 @@ export default async function SocioDashboard() {
                     {formatearPesos(c.monto)}
                   </p>
                   <PagarCuotaBtn cuotaId={c.id} />
+                  <InformarPagoBtn cuotaId={c.id} />
                 </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Cuotas con pago informado, esperando verificación del club */}
+      {enRevision.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold text-tiro-azul">
+            Pagos informados (en revisión)
+          </h2>
+          <div className="space-y-3">
+            {enRevision.map((c) => (
+              <div
+                key={c.id}
+                className="card flex flex-wrap items-center justify-between gap-4 border-blue-200 bg-blue-50/40"
+              >
+                <div>
+                  <p className="font-semibold text-tiro-azul">
+                    {c.descripcion} — {nombreMes(c.periodoMes)} {c.periodoAnio}
+                  </p>
+                  <p className="text-sm text-tiro-grisTexto">
+                    Informaste el pago. La administración lo va a verificar.
+                  </p>
+                  <div className="mt-1">
+                    <CuotaBadge estado={c.estado} />
+                  </div>
+                </div>
+                <p className="text-xl font-bold text-tiro-azul">
+                  {formatearPesos(c.monto)}
+                </p>
               </div>
             ))}
           </div>
