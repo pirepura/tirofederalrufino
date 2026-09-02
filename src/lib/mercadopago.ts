@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { CLUB } from "@/config/club";
 
 // Integración con Mercado Pago vía API REST directa (fetch).
 // Se usa REST en lugar del SDK oficial porque el SDK, en el entorno
@@ -138,7 +139,7 @@ export async function crearSuscripcion(input: CrearSuscripcionInput) {
   const appUrl = (process.env.APP_URL ?? "http://localhost:3000").trim();
 
   const body: Record<string, unknown> = {
-    reason: input.razon ?? "Cuota mensual - Tiro Federal Rufino",
+    reason: input.razon ?? `Cuota mensual - ${CLUB.nombre}`,
     external_reference: input.externalReference,
     payer_email: input.emailPagador,
     auto_recurring: {

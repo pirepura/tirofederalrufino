@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/db";
 import { ESTADO_CUOTA, ROLES, nombreMes } from "@/lib/constants";
+import { CLUB } from "@/config/club";
 import {
   crearPreferenciaPago,
   mercadoPagoConfigurado,
@@ -62,7 +63,7 @@ export async function POST(req: Request) {
 
   try {
     const pref = await crearPreferenciaPago({
-      titulo: `Cuota ${nombreMes(cuota.periodoMes)} ${cuota.periodoAnio} - Tiro Federal Rufino`,
+      titulo: `Cuota ${nombreMes(cuota.periodoMes)} ${cuota.periodoAnio} - ${CLUB.nombre}`,
       monto: cuota.monto,
       externalReference: cuota.id,
       emailComprador: cuota.socio.user.email,

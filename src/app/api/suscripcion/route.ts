@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { ROLES, ESTADO_SUSCRIPCION, ACCION_AUDITORIA } from "@/lib/constants";
+import { CLUB } from "@/config/club";
 import { prisma } from "@/lib/db";
 import { crearSuscripcion, mercadoPagoConfigurado } from "@/lib/mercadopago";
 import { auditarConSesion } from "@/lib/auditoria";
@@ -56,7 +57,7 @@ export async function POST() {
       monto,
       emailPagador: socio.user.email,
       externalReference: socio.id,
-      razon: `Cuota mensual ${socio.categoriaRef?.nombre ?? ""} - Tiro Federal Rufino`.trim(),
+      razon: `Cuota mensual ${socio.categoriaRef?.nombre ?? ""} - ${CLUB.nombre}`.trim(),
     });
 
     // Guardamos la referencia de la suscripción (aún pendiente de autorización)

@@ -1,9 +1,10 @@
 import Link from "next/link";
 import Escudo from "@/components/Escudo";
 import InscripcionForm from "./InscripcionForm";
+import { CLUB, CLUB_DIRECCION_COMPLETA } from "@/config/club";
 
 export const metadata = {
-  title: "Solicitud de inscripción — Tiro Federal Rufino",
+  title: `Solicitud de inscripción — ${CLUB.nombre}`,
 };
 
 export default function InscripcionPage() {
@@ -16,10 +17,10 @@ export default function InscripcionPage() {
             <Escudo size={72} />
           </span>
           <h1 className="mt-3 text-2xl font-bold uppercase tracking-wide text-tiro-azul">
-            Tiro Federal Rufino
+            {CLUB.nombre}
           </h1>
           <p className="text-sm text-tiro-grisTexto">
-            Zelio Zolezzi 470 · (6100) Rufino, Santa Fe · Tel. 3382-442733
+            {CLUB_DIRECCION_COMPLETA}
           </p>
           <h2 className="mt-4 text-lg font-semibold text-tiro-azulOscuro">
             Solicitud de inscripción de socio

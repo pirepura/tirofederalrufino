@@ -4,6 +4,7 @@ import path from "path";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { getSession } from "@/lib/session";
 import { ROLES } from "@/lib/constants";
+import { CLUB } from "@/config/club";
 import { prisma } from "@/lib/db";
 
 // Este endpoint usa fs y pdf-lib: requiere runtime Node (no Edge)
@@ -41,9 +42,10 @@ export async function GET(
   const marginX = 50;
   const contentWidth = width - marginX * 2;
 
-  // Logo (si existe public/escudo.png)
+  // Logo (si existe el archivo definido en la config del club)
   try {
-    const logoPath = path.join(process.cwd(), "public", "escudo.png");
+    const logoRelativo = CLUB.logo.replace(/^\//, ""); // "/escudo.png" -> "escudo.png"
+    const logoPath = path.join(process.cwd(), "public", logoRelativo);
     if (fs.existsSync(logoPath)) {
       const logoBytes = fs.readFileSync(logoPath);
       const logo = await pdf.embedPng(logoBytes);
@@ -60,21 +62,21 @@ export async function GET(
   }
 
   // Encabezado
-  page.drawText("TIRO FEDERAL RUFINO", {
+  page.drawText(CLUB.nombre.toUpperCase(), {
     x: marginX + 80,
     y: y - 20,
     size: 20,
     font: fontBold,
     color: azul,
   });
-  page.drawText("Zelio Zolezzi 470 - (6100) Rufino, Santa Fe", {
+  page.drawText(`${CLUB.direccion} - ${CLUB.ciudad}`, {
     x: marginX + 80,
     y: y - 38,
     size: 9,
     font,
     color: gris,
   });
-  page.drawText("Tel. 3382-442733", {
+  page.drawText(`Tel. ${CLUB.telefono}`, {
     x: marginX + 80,
     y: y - 50,
     size: 9,

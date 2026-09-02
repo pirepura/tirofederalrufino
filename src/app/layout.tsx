@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import SessionProvider from "@/components/SessionProvider";
+import { CLUB } from "@/config/club";
 
 export const metadata: Metadata = {
-  title: "Tiro Federal Rufino — Gestión de Socios",
-  description:
-    "Sistema de administración de socios y pagos de cuotas del Tiro Federal Rufino.",
+  title: `${CLUB.nombre} — Gestión de Socios`,
+  description: CLUB.descripcion,
 };
 
 export default function RootLayout({

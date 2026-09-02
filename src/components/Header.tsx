@@ -3,6 +3,7 @@
 import { signOut } from "next-auth/react";
 import Link from "next/link";
 import Escudo from "@/components/Escudo";
+import { CLUB } from "@/config/club";
 
 type NavLink = { href: string; label: string };
 
@@ -24,7 +25,7 @@ export default function Header({
           </span>
           <div className="leading-tight">
             <p className="text-sm font-bold uppercase tracking-wide">
-              Tiro Federal Rufino
+              {CLUB.nombre}
             </p>
             <p className="text-xs text-tiro-celesteClaro">
               {rol === "ADMIN" ? "Panel de administración" : "Portal del socio"}

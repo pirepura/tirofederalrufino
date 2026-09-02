@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import { COLORES_CLUB } from "./src/config/colores";
 
 const config: Config = {
   content: [
@@ -9,17 +10,9 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Paleta institucional Tiro Federal Rufino (celeste y azul argentino + blanco)
-        tiro: {
-          celeste: "#5FA8E0", // celeste bandera argentina
-          celesteClaro: "#8FC3EC",
-          azul: "#1E4C8A", // azul institucional
-          azulOscuro: "#132F55",
-          blanco: "#FFFFFF",
-          gris: "#F4F7FB",
-          grisTexto: "#4A5568",
-          dorado: "#C9A227", // detalle dorado para acentos/escudo
-        },
+        // Paleta institucional del club (definida en src/config/colores.ts).
+        // El prefijo se mantiene como "tiro" para no cambiar las clases en toda la app.
+        tiro: COLORES_CLUB,
       },
       fontFamily: {
         sans: ["system-ui", "-apple-system", "Segoe UI", "Roboto", "sans-serif"],

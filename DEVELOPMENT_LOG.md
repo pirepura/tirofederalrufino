@@ -348,3 +348,17 @@ Registro permanente de acciones (quién hizo qué y cuándo) en la base, visible
 - [x] Pantalla `/admin/auditoria`: tabla (fecha, usuario+rol, acción, detalle) con filtros por acción y rango de fechas + paginación. Link en el menú admin.
 - [x] Build OK. Probado: login y creación de categoría quedaron registrados con usuario/acción/detalle/fecha correctos. Datos de prueba eliminados.
 - Retención: sin borrado automático (se guardan todos los registros).
+
+### Etapa 21 — Identidad del club centralizada (preparación para replicar)
+Se centralizó toda la identidad del club en un solo lugar, para poder adaptar el sistema a otro club editando un único archivo.
+- [x] `src/config/colores.ts` — paleta de colores (sin imports, usable desde tailwind.config y la app).
+- [x] `src/config/club.ts` — nombre, nombre corto, descripción, dirección, ciudad, teléfono, logo y colores. Export `CLUB` y `CLUB_DIRECCION_COMPLETA`.
+- [x] `tailwind.config.ts` lee los colores desde `src/config/colores.ts` (prefijo `tiro-` se mantiene para no cambiar clases).
+- [x] Reemplazados los textos/datos hardcodeados por `CLUB` en: `layout.tsx` (metadata), `Header.tsx`, `Escudo.tsx` (logo + alt), `login/page.tsx`, `inscripcion/page.tsx` (nombre + dirección + metadata), `api/pagos/route.ts` (título), `api/suscripcion/route.ts` (razón), `lib/mercadopago.ts` (razón fallback), `api/solicitudes/[id]/pdf` (logo + encabezado + dirección + teléfono).
+- [x] Build OK. Verificado que la identidad del Tiro Federal se sigue mostrando bien.
+
+**Cómo adaptar una copia a otro club:**
+1. Editar `src/config/club.ts` (nombre, dirección, ciudad, teléfono, descripción).
+2. Editar los colores en `src/config/colores.ts`.
+3. Reemplazar `/public/escudo.png` por el logo del club nuevo.
+4. (Nueva instancia) crear su base en Neon, su proyecto en Vercel y sus credenciales de Mercado Pago.

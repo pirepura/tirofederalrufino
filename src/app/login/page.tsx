@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { ROLES } from "@/lib/constants";
+import { CLUB } from "@/config/club";
 import LoginForm from "./LoginForm";
 import Escudo from "@/components/Escudo";
 
@@ -18,7 +19,7 @@ export default async function LoginPage() {
             <Escudo size={100} />
           </span>
           <h1 className="mt-3 text-2xl font-bold uppercase tracking-wide">
-            Tiro Federal Rufino
+            {CLUB.nombre}
           </h1>
           <p className="text-sm text-tiro-celesteClaro">
             Gestión de socios y pagos
