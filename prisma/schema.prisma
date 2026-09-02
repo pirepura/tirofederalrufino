@@ -226,3 +226,65 @@ model RegistroAuditoria {
   @@index([accion])
   @@index([usuarioId])
 }
+
+// ---------------------------------------------------------------------------
+// Rifas / sorteos (venta pública de números, sorteo por Lotería Nacional)
+// ---------------------------------------------------------------------------
+
+model Rifa {
+  id          String  @id @default(cuid())
+  slug        String  @unique // identificador para la URL pública
+  titulo      String
+  descripcion String?
+
+  // Configuración de números
+  cantidadNumeros Int // cuántos números tiene la rifa
+  cifras          Int   @default(4) // 1 a 4 (000..9999); para mostrar con ceros a la izquierda
+  precioNumero    Float
+
+  estado String @default("activa") // activa | finalizada
+
+  premios PremioRifa[]
+  numeros NumeroRifa[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PremioRifa {
+  id       String @id @default(cuid())
+  rifaId   String
+  rifa     Rifa   @relation(fields: [rifaId], references: [id], onDelete: Cascade)
+  posicion Int // 1 | 2 | 3
+  titulo   String
+  // Foto del premio (base64 data URL). Se borra al finalizar la rifa.
+  fotoData String?
+  fotoTipo String?
+
+  @@unique([rifaId, posicion])
+}
+
+model NumeroRifa {
+  id     String @id @default(cuid())
+  rifaId String
+  rifa   Rifa   @relation(fields: [rifaId], references: [id], onDelete: Cascade)
+  numero Int
+
+  estado String @default("disponible") // disponible | en_proceso | vendido
+
+  // Datos del comprador (cuando se vende)
+  compradorNombre   String?
+  compradorApellido String?
+  compradorTelefono String?
+
+  // Pago
+  mpPreferenceId String?
+  mpPaymentId    String?
+  fechaPago      DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([rifaId, numero])
+  @@index([estado])
+}

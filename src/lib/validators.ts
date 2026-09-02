@@ -95,3 +95,30 @@ export const categoriaSchema = z.object({
 });
 
 export type CategoriaInput = z.infer<typeof categoriaSchema>;
+
+
+// Rifa (creación por el admin)
+export const rifaCreateSchema = z.object({
+  titulo: z.string().min(1, "El título es obligatorio"),
+  descripcion: z.string().optional().or(z.literal("")),
+  cifras: z.coerce.number().int().min(1).max(4),
+  cantidadNumeros: z.coerce.number().int().min(2).max(10000),
+  precioNumero: z.coerce.number().min(1, "El precio debe ser mayor a 0"),
+  premios: z
+    .array(
+      z.object({
+        posicion: z.coerce.number().int().min(1).max(3),
+        titulo: z.string().min(1, "Cada premio necesita un título"),
+        fotoDataUrl: z.string().optional().or(z.literal("")),
+      })
+    )
+    .length(3, "Deben cargarse los 3 premios"),
+});
+
+// Compra pública de un número de rifa
+export const comprarNumeroSchema = z.object({
+  numero: z.coerce.number().int().min(0),
+  nombre: z.string().min(1, "El nombre es obligatorio"),
+  apellido: z.string().min(1, "El apellido es obligatorio"),
+  telefono: z.string().min(6, "El teléfono es obligatorio"),
+});

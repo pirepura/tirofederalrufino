@@ -16,6 +16,7 @@ import {
   marcarCuotaPagada,
   registrarPagoAutomatico,
 } from "@/lib/cuotas";
+import { confirmarNumeroVendido } from "@/lib/rifas";
 import { registrarAuditoria } from "@/lib/auditoria";
 
 // POST /api/pagos/webhook — recibe notificaciones (IPN/Webhooks) de Mercado Pago.
@@ -106,26 +107,43 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    // --- Pago único de una cuota (checkout normal) ---
+    // --- Pago único (checkout normal): puede ser una cuota o un número de rifa ---
     if (t.includes("payment")) {
       const pago = await obtenerPago(String(dataId));
-      const cuotaId = pago.external_reference;
-      if (pago.status === "approved" && cuotaId) {
-        const cuota = await prisma.cuota.findUnique({ where: { id: cuotaId } });
-        if (cuota && cuota.estado !== ESTADO_CUOTA.PAGADA) {
-          await marcarCuotaPagada(
-            cuotaId,
-            METODO_PAGO.MERCADOPAGO,
-            String(dataId)
-          );
-          await registrarAuditoria({
-            accion: ACCION_AUDITORIA.PAGO_MERCADOPAGO,
-            usuarioRol: "SISTEMA",
-            usuarioNombre: "Mercado Pago",
-            entidad: "cuota",
-            entidadId: cuotaId,
-            detalle: `Pago confirmado por Mercado Pago (${cuota.monto})`,
+      const ref = pago.external_reference;
+
+      if (pago.status === "approved" && ref) {
+        // Número de rifa: external_reference con prefijo "rifa:"
+        if (ref.startsWith("rifa:")) {
+          const numeroRifaId = ref.slice("rifa:".length);
+          const num = await confirmarNumeroVendido({
+            numeroRifaId,
+            mpPaymentId: String(dataId),
           });
+          if (num) {
+            await registrarAuditoria({
+              accion: ACCION_AUDITORIA.RIFA_NUMERO_VENDIDO,
+              usuarioRol: "SISTEMA",
+              usuarioNombre: "Mercado Pago",
+              entidad: "rifa",
+              entidadId: num.rifaId,
+              detalle: `Número ${num.numero} vendido a ${num.compradorNombre ?? ""} ${num.compradorApellido ?? ""}`.trim(),
+            });
+          }
+        } else {
+          // Cuota
+          const cuota = await prisma.cuota.findUnique({ where: { id: ref } });
+          if (cuota && cuota.estado !== ESTADO_CUOTA.PAGADA) {
+            await marcarCuotaPagada(ref, METODO_PAGO.MERCADOPAGO, String(dataId));
+            await registrarAuditoria({
+              accion: ACCION_AUDITORIA.PAGO_MERCADOPAGO,
+              usuarioRol: "SISTEMA",
+              usuarioNombre: "Mercado Pago",
+              entidad: "cuota",
+              entidadId: ref,
+              detalle: `Pago confirmado por Mercado Pago (${cuota.monto})`,
+            });
+          }
         }
       }
       return NextResponse.json({ ok: true });

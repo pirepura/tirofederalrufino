@@ -77,6 +77,10 @@ export const ACCION_AUDITORIA = {
   DEBITO_CANCELADO: "DEBITO_CANCELADO",
   // Cuenta
   PASSWORD_CAMBIADA: "PASSWORD_CAMBIADA",
+  // Rifas
+  RIFA_CREADA: "RIFA_CREADA",
+  RIFA_FINALIZADA: "RIFA_FINALIZADA",
+  RIFA_NUMERO_VENDIDO: "RIFA_NUMERO_VENDIDO",
 } as const;
 export type AccionAuditoria =
   (typeof ACCION_AUDITORIA)[keyof typeof ACCION_AUDITORIA];
@@ -103,7 +107,21 @@ export const ACCION_LABEL: Record<string, string> = {
   DEBITO_ACTIVADO: "Débito automático activado",
   DEBITO_CANCELADO: "Débito automático cancelado",
   PASSWORD_CAMBIADA: "Contraseña cambiada",
+  RIFA_CREADA: "Rifa creada",
+  RIFA_FINALIZADA: "Rifa finalizada",
+  RIFA_NUMERO_VENDIDO: "Número de rifa vendido",
 };
+
+export const ESTADO_RIFA = {
+  ACTIVA: "activa",
+  FINALIZADA: "finalizada",
+} as const;
+
+export const ESTADO_NUMERO_RIFA = {
+  DISPONIBLE: "disponible",
+  EN_PROCESO: "en_proceso",
+  VENDIDO: "vendido",
+} as const;
 
 export const METODO_PAGO = {
   MERCADOPAGO: "mercadopago",

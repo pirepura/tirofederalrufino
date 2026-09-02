@@ -32,6 +32,8 @@ type CrearPreferenciaInput = {
   // Referencia interna (ej: id de la cuota) para reconciliar el pago
   externalReference: string;
   emailComprador?: string;
+  // URL de retorno personalizada (sin el "?estado="). Si no se pasa, usa la de socios.
+  backUrl?: string;
 };
 
 // Detecta si la URL es local (no accesible desde internet).
@@ -62,11 +64,17 @@ export async function crearPreferenciaPago(input: CrearPreferenciaInput) {
       },
     ],
     external_reference: input.externalReference,
-    back_urls: {
-      success: `${appUrl}/socio/pago/resultado?estado=exito`,
-      failure: `${appUrl}/socio/pago/resultado?estado=error`,
-      pending: `${appUrl}/socio/pago/resultado?estado=pendiente`,
-    },
+    back_urls: input.backUrl
+      ? {
+          success: input.backUrl,
+          failure: input.backUrl,
+          pending: input.backUrl,
+        }
+      : {
+          success: `${appUrl}/socio/pago/resultado?estado=exito`,
+          failure: `${appUrl}/socio/pago/resultado?estado=error`,
+          pending: `${appUrl}/socio/pago/resultado?estado=pendiente`,
+        },
   };
 
   if (input.emailComprador) {

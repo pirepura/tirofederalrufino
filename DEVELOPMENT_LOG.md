@@ -362,3 +362,17 @@ Se centralizó toda la identidad del club en un solo lugar, para poder adaptar e
 2. Editar los colores en `src/config/colores.ts`.
 3. Reemplazar `/public/escudo.png` por el logo del club nuevo.
 4. (Nueva instancia) crear su base en Neon, su proyecto en Vercel y sus credenciales de Mercado Pago.
+
+### Etapa 22 — Módulo de Rifas / Sorteos (venta pública de números)
+Rifa con venta pública de números por link, pago con Mercado Pago, comprobante PDF. Sorteo por Lotería Nacional (no interno).
+- [x] Modelos `Rifa` (slug, titulo, descripcion, cantidadNumeros, cifras 1-4, precioNumero, estado), `PremioRifa` (posicion 1-3, titulo, fotoData base64), `NumeroRifa` (numero, estado disponible/en_proceso/vendido, datos comprador, mpPaymentId). Constantes ESTADO_RIFA, ESTADO_NUMERO_RIFA + acciones de auditoría. `prisma db push`.
+- [x] `src/lib/rifas.ts`: crearRifa, listarRifas (con vendidos/recaudado), obtenerRifaPublica(slug), reservarNumeroEnProceso, confirmarNumeroVendido, finalizarRifa (borra fotos), formatearNumero.
+- [x] Validadores `rifaCreateSchema`, `comprarNumeroSchema`.
+- [x] APIs: `GET/POST /api/rifas` (admin), `POST /api/rifas/[id]/finalizar` (admin), `POST /api/rifas/publica/[slug]/comprar` (público, crea preferencia MP con external_reference "rifa:<numeroId>" y backUrl a /rifa/[slug]/gracias), `GET /api/rifas/numero/[id]/pdf` (comprobante).
+- [x] Webhook MP extendido: distingue external_reference "rifa:<id>" (confirma número vendido + auditoría) de cuota.
+- [x] `crearPreferenciaPago` acepta `backUrl` opcional (para el retorno de la rifa).
+- [x] UI admin: `/admin/rifas` (listado), `/admin/rifas/nueva` (RifaForm: datos + 3 premios con foto + cifras/cantidad/precio), `/admin/rifas/[id]` (link público para copiar, premios, vendidos, recaudación, finalizar). Link "Rifas" en el menú.
+- [x] UI pública: `/rifa/[slug]` (premios con foto, grilla de números si ≤300 o input manual si son muchos, datos comprador, pagar MP) y `/rifa/[slug]/gracias`.
+- [x] Comprobante PDF con escudo, datos del sorteo, comprador y número.
+- [x] Build OK. Probado end-to-end en local (crear rifa, pública, comprar→preferencia MP, confirmar venta, PDF). Datos de prueba eliminados.
+- Nota: cobro real requiere credenciales de PRODUCCIÓN de MP (hoy TEST). Fotos de premios se borran al finalizar la rifa.
