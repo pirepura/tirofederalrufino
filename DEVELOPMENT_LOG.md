@@ -299,3 +299,17 @@ Objetivo: el precio de la cuota se define por categoría, en un solo lugar; al a
 - [x] Páginas admin (socios listado/detalle) muestran `categoriaRef.nombre` y precio.
 - [x] Build OK. Circuito probado en local (crear/editar/eliminar categoría, protección con socios, precio para generar cuotas).
 Nota: la contraseña del admin fue cambiada por el usuario (ya no es la inicial), correcto. Categorías reales cargadas por el usuario: General $10000, Estudiante $5000, Menor $2500.
+
+### Etapa 17 — Categorías de socio con precio centralizado
+Objetivo: el precio de la cuota se define por categoría en un solo lugar; al aumentar, cambia el precio de la categoría y aplica a todos sus socios (en cuotas futuras). Las cuotas ya generadas conservan su monto histórico.
+- [x] Modelo `Categoria` (nombre único, cuotaMensual, activa). `Socio.categoriaId` + relación `categoriaRef`. Se eliminaron los campos legacy `Socio.categoria` (texto) y `Socio.cuotaMensual`.
+- [x] Migración en Neon preservando datos: se creó "General" y se vincularon los socios existentes.
+- [x] `src/lib/categorias.ts`: listar, activas, crear, actualizar, eliminar (no elimina si tiene socios).
+- [x] `src/lib/validators.ts`: `categoriaSchema`; `socioCreate/Update` usan `categoriaId` (se quitó precio/categoría-texto).
+- [x] API `/api/categorias` (GET/POST) y `/api/categorias/[id]` (PUT/DELETE), solo admin.
+- [x] Pantalla `Admin → Categorías` (`CategoriasAdmin`): alta, edición de precio inline, eliminar, cuenta de socios. Link en el menú.
+- [x] `SocioForm`: selector de categoría (muestra precio), sin campo de precio manual.
+- [x] Generador de cuotas usa `socio.categoriaRef.cuotaMensual`; ignora socios sin monto (contador `sinMonto`).
+- [x] `aprobarSolicitud(solicitudId, categoriaId)` + `AccionesSolicitud` con selector de categoría al aprobar.
+- [x] Verificado en local: generación de cuotas respeta el precio de cada categoría (General $10000, Menor $2500).
+- Nota: el admin cambió su contraseña (correcto). Para tests internos se usó un admin temporal, ya eliminado.
