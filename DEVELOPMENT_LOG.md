@@ -324,3 +324,15 @@ El socio puede informar que pagó por otro medio (transferencia, etc.) y subir e
 - [x] `CuotaBadge`: estado EN_REVISION en azul con etiqueta "EN REVISIÓN".
 - [x] Build OK. Circuito probado en local: informar → EN_REVISION → admin ve comprobante → confirmar → PAGADA + comprobante borrado (GET devuelve 404). Datos de prueba eliminados.
 - Decisión aplicada: el archivo del comprobante se borra al confirmar el pago (no se acumula). Queda registro del pago (fecha, monto, método).
+
+### Etapa 19 — Débito automático (suscripción de Mercado Pago)
+El socio puede activar el débito automático mensual de su cuota desde su panel. Mercado Pago cobra solo cada mes y el webhook marca las cuotas pagadas.
+- [x] Campos en `Socio`: `mpPreapprovalId`, `suscripcionEstado` (activa/pausada/cancelada), `suscripcionMonto`. Constante `ESTADO_SUSCRIPCION`. `prisma db push`.
+- [x] `src/lib/mercadopago.ts`: `crearSuscripcion` (POST /preapproval, auto_recurring mensual, back_url, external_reference=socioId, status pending → init_point), `obtenerSuscripcion`, `cancelarSuscripcion`, `obtenerPagoAutorizado`.
+- [x] API socio: `POST /api/suscripcion` (crea preapproval con el monto de la categoría, devuelve initPoint) y `POST /api/suscripcion/cancelar`.
+- [x] Webhook extendido (`/api/pagos/webhook`): maneja `payment` (pago único), `preapproval` (alta/estado de suscripción → actualiza socio) y `authorized_payment` (cobro mensual → `registrarPagoAutomatico` marca/crea la cuota del período como PAGADA, método "mercadopago-debito").
+- [x] `registrarPagoAutomatico` en `cuotas.ts`.
+- [x] UI socio: componente `DebitoAutomatico` (activar → redirige a MP; ver estado activo; cancelar) en el panel. Página `/socio/debito/resultado` al volver de MP.
+- [x] UI admin: indicador de débito automático (activo / no activo) en el detalle del socio.
+- [x] Build OK. Probado contra la API real de MP con token de prueba: se crea el preapproval y devuelve init_point (verificado y luego cancelado).
+- **Pendiente del usuario**: para que el cobro sea real, cargar credenciales de PRODUCCIÓN de Mercado Pago (hoy hay token TEST). El flujo técnico ya está listo; solo se cambian las credenciales en Vercel.

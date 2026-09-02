@@ -5,10 +5,16 @@ import {
   actualizarCuotasVencidas,
   cuotasImpagasDeSocio,
 } from "@/lib/cuotas";
-import { ESTADO_CUOTA, formatearPesos, nombreMes } from "@/lib/constants";
+import {
+  ESTADO_CUOTA,
+  ESTADO_SUSCRIPCION,
+  formatearPesos,
+  nombreMes,
+} from "@/lib/constants";
 import { CuotaBadge } from "@/components/EstadoBadge";
 import PagarCuotaBtn from "@/components/PagarCuotaBtn";
 import InformarPagoBtn from "@/components/InformarPagoBtn";
+import DebitoAutomatico from "@/components/DebitoAutomatico";
 
 export const dynamic = "force-dynamic";
 
@@ -63,6 +69,12 @@ export default async function SocioDashboard() {
           </p>
         </div>
       )}
+
+      {/* Débito automático */}
+      <DebitoAutomatico
+        activa={socio?.suscripcionEstado === ESTADO_SUSCRIPCION.ACTIVA}
+        monto={socio?.categoriaRef?.cuotaMensual ?? 0}
+      />
 
       {/* Detalle de cuotas impagas con botón de pago */}
       {impagas.length > 0 && (

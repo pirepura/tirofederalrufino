@@ -53,6 +53,11 @@ model Socio {
   categoriaId String?
   categoriaRef Categoria? @relation(fields: [categoriaId], references: [id])
 
+  // Débito automático (suscripción de Mercado Pago / preapproval)
+  mpPreapprovalId   String? // id de la suscripción en Mercado Pago
+  suscripcionEstado String? // "activa" | "pausada" | "cancelada" | null (sin débito)
+  suscripcionMonto  Float?  // monto con el que se creó la suscripción
+
   // Cuenta de acceso del socio
   userId String @unique
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)

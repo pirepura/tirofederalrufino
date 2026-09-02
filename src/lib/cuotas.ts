@@ -156,6 +156,60 @@ export async function resolverPagoInformado(params: {
   });
 }
 
+// Registra el pago automático (débito por suscripción) de un socio para el
+// período actual: marca la cuota del mes como PAGADA, o la crea ya pagada si
+// todavía no existía. Usado por el webhook de suscripción de Mercado Pago.
+export async function registrarPagoAutomatico(params: {
+  socioId: string;
+  monto: number;
+  mpPaymentId: string;
+}) {
+  const ahora = new Date();
+  const periodoMes = ahora.getMonth() + 1;
+  const periodoAnio = ahora.getFullYear();
+
+  const existente = await prisma.cuota.findUnique({
+    where: {
+      socioId_periodoMes_periodoAnio: {
+        socioId: params.socioId,
+        periodoMes,
+        periodoAnio,
+      },
+    },
+  });
+
+  if (existente) {
+    if (existente.estado === ESTADO_CUOTA.PAGADA) return existente; // ya pagada
+    return prisma.cuota.update({
+      where: { id: existente.id },
+      data: {
+        estado: ESTADO_CUOTA.PAGADA,
+        fechaPago: ahora,
+        metodoPago: "mercadopago-debito",
+        mpPaymentId: params.mpPaymentId,
+        comprobanteData: null,
+        comprobanteTipo: null,
+      },
+    });
+  }
+
+  // No existía la cuota del período: la creamos ya pagada.
+  return prisma.cuota.create({
+    data: {
+      socioId: params.socioId,
+      periodoMes,
+      periodoAnio,
+      monto: params.monto,
+      descripcion: "Cuota mensual (débito automático)",
+      fechaVencimiento: new Date(periodoAnio, periodoMes - 1, 10),
+      estado: ESTADO_CUOTA.PAGADA,
+      fechaPago: ahora,
+      metodoPago: "mercadopago-debito",
+      mpPaymentId: params.mpPaymentId,
+    },
+  });
+}
+
 // Cuotas con pago informado pendiente de verificación (para el admin).
 export async function cuotasEnRevision() {
   return prisma.cuota.findMany({

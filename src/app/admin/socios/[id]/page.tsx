@@ -87,6 +87,15 @@ export default async function SocioDetallePage({
         </div>
       </div>
 
+      <div className="card flex items-center gap-2">
+        <span className="text-sm text-tiro-grisTexto">Débito automático:</span>
+        {socio.suscripcionEstado === "activa" ? (
+          <span className="badge bg-green-100 text-green-800">ACTIVO</span>
+        ) : (
+          <span className="badge bg-slate-200 text-slate-600">No activo</span>
+        )}
+      </div>
+
       <section className="space-y-3">
         <h2 className="text-lg font-semibold text-tiro-azul">Datos del socio</h2>
         <SocioForm

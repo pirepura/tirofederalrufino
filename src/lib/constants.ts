@@ -31,6 +31,14 @@ export const ESTADO_SOLICITUD = {
 export type EstadoSolicitud =
   (typeof ESTADO_SOLICITUD)[keyof typeof ESTADO_SOLICITUD];
 
+export const ESTADO_SUSCRIPCION = {
+  ACTIVA: "activa",
+  PAUSADA: "pausada",
+  CANCELADA: "cancelada",
+} as const;
+export type EstadoSuscripcion =
+  (typeof ESTADO_SUSCRIPCION)[keyof typeof ESTADO_SUSCRIPCION];
+
 export const ESTADO_ALQUILER = {
   RESERVADO: "RESERVADO",
   CONFIRMADO: "CONFIRMADO",
