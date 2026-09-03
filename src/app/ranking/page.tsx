@@ -1,17 +1,16 @@
 import { rankingHistorico } from "@/lib/torneos";
+import { RANKING_CONFIG } from "@/lib/constants";
 import { CLUB } from "@/config/club";
 import Escudo from "@/components/Escudo";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: `Ranking de tiradores — ${CLUB.nombre}`,
+  title: `Ranking de tiro — ${CLUB.nombre}`,
 };
 
 export default async function RankingPublicoPage() {
-  const { ranking, mejoresN, minTorneos } = await rankingHistorico();
-  const rankeables = ranking.filter((r) => r.rankeable);
-  const enFormacion = ranking.filter((r) => !r.rankeable);
+  const { ranking, enFormacion } = await rankingHistorico();
 
   return (
     <main className="min-h-screen bg-tiro-gris py-8">
@@ -20,19 +19,21 @@ export default async function RankingPublicoPage() {
           <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white p-1 shadow">
             <Escudo size={56} />
           </span>
-          <h1 className="mt-3 text-2xl font-bold text-tiro-azul">
-            Ranking de tiradores
+          <p className="mt-2 text-sm font-semibold uppercase tracking-wide text-tiro-azul">
+            {CLUB.nombre}
+          </p>
+          <h1 className="mt-2 text-3xl font-bold text-tiro-azul">
+            Ranking de tiro
           </h1>
-          <p className="text-sm text-tiro-grisTexto">
-            {CLUB.nombre} · Índice = promedio de rendimiento de los mejores{" "}
-            {mejoresN} torneos
+          <p className="mt-1 text-sm text-tiro-grisTexto">
+            Índice: promedio de rendimiento de los mejores{" "}
+            {RANKING_CONFIG.MEJORES_N} torneos de cada tirador.
           </p>
         </div>
 
-        {rankeables.length === 0 ? (
+        {ranking.length === 0 ? (
           <div className="card text-center text-tiro-grisTexto">
-            Todavía no hay tiradores con el mínimo de {minTorneos} torneos para
-            el ranking.
+            Todavía no hay tiradores con suficientes torneos para el ranking.
           </div>
         ) : (
           <div className="card overflow-x-auto p-0">
@@ -41,24 +42,24 @@ export default async function RankingPublicoPage() {
                 <tr>
                   <th className="px-4 py-3 font-semibold">Pos.</th>
                   <th className="px-4 py-3 font-semibold">Tirador</th>
-                  <th className="px-4 py-3 font-semibold">Torneos</th>
                   <th className="px-4 py-3 font-semibold">Índice</th>
+                  <th className="px-4 py-3 font-semibold">Torneos</th>
                 </tr>
               </thead>
               <tbody>
-                {rankeables.map((r, i) => (
-                  <tr key={r.socio.id} className="border-b last:border-0">
+                {ranking.map((r, i) => (
+                  <tr key={r.socioId} className="border-b last:border-0">
                     <td className="px-4 py-3 font-bold text-tiro-azul">
                       {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}°`}
                     </td>
                     <td className="px-4 py-3">
-                      {r.socio.apellido}, {r.socio.nombre}
-                    </td>
-                    <td className="px-4 py-3 text-tiro-grisTexto">
-                      {r.torneosJugados}
+                      {r.apellido}, {r.nombre}
                     </td>
                     <td className="px-4 py-3 font-semibold">
                       {r.indice.toFixed(2)}%
+                    </td>
+                    <td className="px-4 py-3 text-tiro-grisTexto">
+                      {r.torneosJugados}
                     </td>
                   </tr>
                 ))}
@@ -68,21 +69,17 @@ export default async function RankingPublicoPage() {
         )}
 
         {enFormacion.length > 0 && (
-          <div className="mt-4">
-            <p className="mb-2 text-sm font-semibold text-tiro-grisTexto">
-              En formación (menos de {minTorneos} torneos)
-            </p>
-            <div className="card p-4 text-sm text-tiro-grisTexto">
+          <div className="mt-6">
+            <h2 className="mb-2 text-sm font-semibold text-tiro-grisTexto">
+              En formación (menos de {RANKING_CONFIG.MINIMO_TORNEOS} torneos)
+            </h2>
+            <div className="card p-3 text-sm text-tiro-grisTexto">
               {enFormacion
-                .map((r) => `${r.socio.apellido}, ${r.socio.nombre}`)
+                .map((r) => `${r.apellido}, ${r.nombre}`)
                 .join(" · ")}
             </div>
           </div>
         )}
-
-        <p className="mt-6 text-center text-xs text-tiro-grisTexto">
-          Solo se rankean socios con al menos {minTorneos} torneos jugados.
-        </p>
       </div>
     </main>
   );

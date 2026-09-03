@@ -1,5 +1,5 @@
 import Link from "next/link";
-import NuevoTorneoForm from "@/components/NuevoTorneoForm";
+import TorneoForm from "@/components/TorneoForm";
 
 export default function NuevoTorneoPage() {
   return (
@@ -9,11 +9,8 @@ export default function NuevoTorneoPage() {
           ← Volver a torneos
         </Link>
         <h1 className="mt-1 text-2xl font-bold text-tiro-azul">Nuevo torneo</h1>
-        <p className="text-sm text-tiro-grisTexto">
-          Creá el torneo y luego cargá sus categorías y participantes.
-        </p>
       </div>
-      <NuevoTorneoForm />
+      <TorneoForm />
     </div>
   );
 }

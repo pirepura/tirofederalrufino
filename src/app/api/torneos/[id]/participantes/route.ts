@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { ROLES, ACCION_AUDITORIA } from "@/lib/constants";
-import { participacionSchema } from "@/lib/validators";
+import { participanteSchema } from "@/lib/validators";
 import { registrarParticipacion } from "@/lib/torneos";
 import { auditarConSesion } from "@/lib/auditoria";
 
@@ -14,16 +14,18 @@ export async function POST(
   if (session?.user.rol !== ROLES.ADMIN) {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
+
   const body = await req.json().catch(() => ({}));
-  const parsed = participacionSchema.safeParse(body);
+  const parsed = participanteSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: parsed.error.issues[0]?.message ?? "Datos inválidos" },
       { status: 400 }
     );
   }
+
   try {
-    const part = await registrarParticipacion({
+    const p = await registrarParticipacion({
       torneoId: params.id,
       categoriaId: parsed.data.categoriaId,
       socioId: parsed.data.socioId || null,
@@ -35,11 +37,11 @@ export async function POST(
       accion: ACCION_AUDITORIA.TORNEO_PARTICIPANTE,
       entidad: "torneo",
       entidadId: params.id,
-      detalle: `Participante: ${parsed.data.apellido}, ${parsed.data.nombre} — ${parsed.data.puntaje} pts`,
+      detalle: `Participante ${parsed.data.apellido}, ${parsed.data.nombre} — ${parsed.data.puntaje} pts`,
     });
-    return NextResponse.json(part, { status: 201 });
+    return NextResponse.json(p, { status: 201 });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Error al cargar el participante";
+    const msg = e instanceof Error ? e.message : "Error al cargar participante";
     return NextResponse.json({ error: msg }, { status: 400 });
   }
 }

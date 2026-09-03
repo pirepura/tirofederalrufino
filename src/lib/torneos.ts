@@ -1,50 +1,52 @@
 import { prisma } from "@/lib/db";
-import { ESTADO_TORNEO } from "@/lib/constants";
+import { ESTADO_TORNEO, RANKING_CONFIG } from "@/lib/constants";
 
-// Config del ranking histórico
-const MEJORES_N = 5; // se promedian los mejores 5 rendimientos
-const MIN_TORNEOS = 2; // mínimo de torneos para entrar al ranking oficial
-
+// Crea un torneo con sus categorías.
 export async function crearTorneo(input: {
   nombre: string;
-  fecha: Date;
+  fecha: string;
   disciplina?: string;
+  categorias: { nombre: string; puntajeMaximo: number }[];
 }) {
   return prisma.torneo.create({
     data: {
       nombre: input.nombre,
-      fecha: input.fecha,
+      fecha: new Date(input.fecha),
       disciplina: input.disciplina || "Aire comprimido",
       estado: ESTADO_TORNEO.ABIERTO,
+      categorias: {
+        create: input.categorias.map((c) => ({
+          nombre: c.nombre,
+          puntajeMaximo: c.puntajeMaximo,
+        })),
+      },
     },
+    include: { categorias: true },
   });
 }
 
 export async function listarTorneos() {
   return prisma.torneo.findMany({
     orderBy: { fecha: "desc" },
+    include: { _count: { select: { participaciones: true } } },
+  });
+}
+
+export async function obtenerTorneo(id: string) {
+  return prisma.torneo.findUnique({
+    where: { id },
     include: {
-      _count: { select: { participaciones: true, categorias: true } },
+      categorias: { orderBy: { nombre: "asc" } },
+      participaciones: {
+        orderBy: { puntaje: "desc" },
+        include: { categoria: true },
+      },
     },
   });
 }
 
-export async function agregarCategoria(input: {
-  torneoId: string;
-  nombre: string;
-  puntajeMaximo: number;
-}) {
-  return prisma.categoriaTorneo.create({
-    data: {
-      torneoId: input.torneoId,
-      nombre: input.nombre.trim(),
-      puntajeMaximo: input.puntajeMaximo,
-    },
-  });
-}
-
-// Registra un participante (socio o no socio) con su puntaje.
-// Calcula el rendimiento % respecto del puntaje máximo de la categoría.
+// Registra la participación de alguien (socio o no socio) con su puntaje.
+// Calcula el rendimiento = puntaje / puntajeMaximo * 100.
 export async function registrarParticipacion(input: {
   torneoId: string;
   categoriaId: string;
@@ -57,7 +59,7 @@ export async function registrarParticipacion(input: {
     where: { id: input.categoriaId },
   });
   if (!categoria || categoria.torneoId !== input.torneoId) {
-    throw new Error("Categoría inválida");
+    throw new Error("Categoría inválida para este torneo");
   }
   if (input.puntaje < 0 || input.puntaje > categoria.puntajeMaximo) {
     throw new Error(
@@ -65,122 +67,151 @@ export async function registrarParticipacion(input: {
     );
   }
 
-  const rendimiento =
-    categoria.puntajeMaximo > 0
-      ? (input.puntaje / categoria.puntajeMaximo) * 100
-      : 0;
+  const rendimiento = (input.puntaje / categoria.puntajeMaximo) * 100;
 
   return prisma.participacionTorneo.create({
     data: {
       torneoId: input.torneoId,
       categoriaId: input.categoriaId,
       socioId: input.socioId || null,
-      nombre: input.nombre.trim(),
-      apellido: input.apellido.trim(),
+      nombre: input.nombre,
+      apellido: input.apellido,
       puntaje: input.puntaje,
       rendimiento,
     },
   });
 }
 
-export async function cerrarTorneo(torneoId: string) {
+export async function cerrarTorneo(id: string) {
   return prisma.torneo.update({
-    where: { id: torneoId },
+    where: { id },
     data: { estado: ESTADO_TORNEO.CERRADO },
   });
 }
 
-// Detalle del torneo con resultados agrupados por categoría (ordenados por
-// puntaje desc) y el campeón de cada una.
-export async function detalleTorneo(torneoId: string) {
-  const torneo = await prisma.torneo.findUnique({
-    where: { id: torneoId },
+// Resultados de un torneo agrupados por categoría, con el campeón de cada una.
+export type ResultadoCategoria = {
+  categoria: { id: string; nombre: string; puntajeMaximo: number };
+  posiciones: {
+    posicion: number;
+    nombre: string;
+    apellido: string;
+    puntaje: number;
+    rendimiento: number;
+    esSocio: boolean;
+  }[];
+};
+
+export async function resultadosPorCategoria(
+  torneoId: string
+): Promise<ResultadoCategoria[]> {
+  const categorias = await prisma.categoriaTorneo.findMany({
+    where: { torneoId },
+    orderBy: { nombre: "asc" },
     include: {
-      categorias: { orderBy: { nombre: "asc" } },
-      participaciones: {
-        orderBy: { puntaje: "desc" },
-      },
+      participaciones: { orderBy: { puntaje: "desc" } },
     },
   });
-  if (!torneo) return null;
 
-  const porCategoria = torneo.categorias.map((cat) => {
-    const parts = torneo.participaciones
-      .filter((p) => p.categoriaId === cat.id)
-      .sort((a, b) => b.puntaje - a.puntaje);
-    return {
-      categoria: cat,
-      participantes: parts,
-      campeon: parts[0] ?? null,
-    };
-  });
-
-  return { torneo, porCategoria };
+  return categorias.map((cat) => ({
+    categoria: {
+      id: cat.id,
+      nombre: cat.nombre,
+      puntajeMaximo: cat.puntajeMaximo,
+    },
+    posiciones: cat.participaciones.map((p, i) => ({
+      posicion: i + 1,
+      nombre: p.nombre,
+      apellido: p.apellido,
+      puntaje: p.puntaje,
+      rendimiento: p.rendimiento,
+      esSocio: !!p.socioId,
+    })),
+  }));
 }
 
 // Ranking histórico de socios: índice = promedio de rendimiento de sus
-// mejores N torneos. Solo entran los socios con al menos MIN_TORNEOS.
-export async function rankingHistorico() {
-  // Traemos todas las participaciones de socios (con socioId no nulo)
-  const parts = await prisma.participacionTorneo.findMany({
+// mejores N torneos. Solo entran socios con al menos MINIMO_TORNEOS.
+export type RankingItem = {
+  socioId: string;
+  nombre: string;
+  apellido: string;
+  indice: number; // promedio de rendimiento (%)
+  torneosJugados: number;
+};
+
+export async function rankingHistorico(): Promise<{
+  ranking: RankingItem[];
+  enFormacion: RankingItem[];
+}> {
+  // Solo participaciones de socios (socioId no nulo)
+  const participaciones = await prisma.participacionTorneo.findMany({
     where: { socioId: { not: null } },
     include: {
-      socio: {
-        select: { id: true, numeroSocio: true, nombre: true, apellido: true },
-      },
+      socio: { select: { id: true, nombre: true, apellido: true } },
     },
   });
 
   // Agrupar por socio
   const porSocio = new Map<
     string,
-    {
-      socio: { id: string; numeroSocio: number; nombre: string; apellido: string };
-      rendimientos: number[];
-    }
+    { nombre: string; apellido: string; rendimientos: number[] }
   >();
 
-  for (const p of parts) {
-    if (!p.socio) continue;
-    const entry = porSocio.get(p.socio.id) ?? {
-      socio: p.socio,
+  for (const p of participaciones) {
+    if (!p.socioId || !p.socio) continue;
+    const actual = porSocio.get(p.socioId) ?? {
+      nombre: p.socio.nombre,
+      apellido: p.socio.apellido,
       rendimientos: [],
     };
-    entry.rendimientos.push(p.rendimiento);
-    porSocio.set(p.socio.id, entry);
+    actual.rendimientos.push(p.rendimiento);
+    porSocio.set(p.socioId, actual);
   }
 
-  const ranking = [];
-  for (const { socio, rendimientos } of Array.from(porSocio.values())) {
-    const torneosJugados = rendimientos.length;
+  const todos: RankingItem[] = [];
+  for (const [socioId, data] of Array.from(porSocio.entries())) {
     // Mejores N rendimientos
-    const mejores = [...rendimientos].sort((a, b) => b - a).slice(0, MEJORES_N);
+    const mejores = [...data.rendimientos]
+      .sort((a, b) => b - a)
+      .slice(0, RANKING_CONFIG.MEJORES_N);
     const indice =
       mejores.reduce((s, r) => s + r, 0) / mejores.length;
-    ranking.push({
-      socio,
-      torneosJugados,
-      indice, // promedio de rendimiento (%)
-      rankeable: torneosJugados >= MIN_TORNEOS,
+    todos.push({
+      socioId,
+      nombre: data.nombre,
+      apellido: data.apellido,
+      indice: Math.round(indice * 100) / 100,
+      torneosJugados: data.rendimientos.length,
     });
   }
 
-  // Ordenar: primero los rankeables por índice desc, luego el resto
-  ranking.sort((a, b) => {
-    if (a.rankeable !== b.rankeable) return a.rankeable ? -1 : 1;
-    return b.indice - a.indice;
-  });
+  const ranking = todos
+    .filter((t) => t.torneosJugados >= RANKING_CONFIG.MINIMO_TORNEOS)
+    .sort((a, b) => b.indice - a.indice);
 
-  return { ranking, mejoresN: MEJORES_N, minTorneos: MIN_TORNEOS };
+  const enFormacion = todos
+    .filter((t) => t.torneosJugados < RANKING_CONFIG.MINIMO_TORNEOS)
+    .sort((a, b) => b.indice - a.indice);
+
+  return { ranking, enFormacion };
 }
 
-// Posición e índice de un socio puntual (para su panel).
+// Datos de ranking de un socio puntual (para su panel).
 export async function rankingDeSocio(socioId: string) {
-  const { ranking } = await rankingHistorico();
-  const idx = ranking.findIndex((r) => r.socio.id === socioId);
-  if (idx === -1) return null;
-  const entry = ranking[idx];
-  // La posición solo tiene sentido si es rankeable
-  const posicion = entry.rankeable ? idx + 1 : null;
-  return { ...entry, posicion, totalRankeables: ranking.filter((r) => r.rankeable).length };
+  const { ranking, enFormacion } = await rankingHistorico();
+  const posicion = ranking.findIndex((r) => r.socioId === socioId);
+  if (posicion >= 0) {
+    return {
+      enRanking: true,
+      posicion: posicion + 1,
+      total: ranking.length,
+      item: ranking[posicion],
+    };
+  }
+  const item = enFormacion.find((r) => r.socioId === socioId);
+  return {
+    enRanking: false,
+    item: item ?? null,
+  };
 }

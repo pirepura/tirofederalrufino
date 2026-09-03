@@ -401,3 +401,14 @@ Torneos con categorías (cada una con puntaje máximo), participantes socios/no 
 - [x] Ranking: página pública /ranking (podio, índice %, "en formación" para <2 torneos) y widget en el panel del socio (posición, índice, torneos).
 - [x] Build OK. Probado end-to-end: torneo + categoría (máx 400) + 2 socios (380→95%, 360→90%), rendimientos y campeón correctos, ranking muestra "en formación" con 1 torneo (correcto). Datos de prueba eliminados.
 - Config ranking: mejores 5 torneos, mínimo 2 para rankear (en src/lib/torneos.ts).
+
+### Etapa 23 — Torneos de tiro y ranking histórico
+Admin crea torneos con categorías (c/u con puntaje máximo), carga participantes (socios y no socios) con su puntaje, tabla por categoría con campeón. Ranking histórico de socios: índice = promedio de rendimiento (%) de sus mejores 5 torneos (mín. 2 para rankear). Público + panel del socio.
+- [x] Modelos `Torneo`, `CategoriaTorneo` (nombre + puntajeMaximo), `ParticipacionTorneo` (socioId opt, nombre/apellido, puntaje, rendimiento). Relación inversa `Socio.participaciones`. `prisma db push`. Constantes `ESTADO_TORNEO`, `RANKING_CONFIG`.
+- [x] `src/lib/torneos.ts`: crearTorneo, listarTorneos, registrarParticipacion (calcula rendimiento=puntaje/max*100), cerrarTorneo, resultadosPorCategoria (tabla ordenada + campeón), rankingHistorico (promedio mejores N, mín torneos), rankingDeSocio.
+- [x] Validadores `torneoCreateSchema`, `participanteSchema`. Eliminado `categoriaTorneoSchema` huérfano.
+- [x] APIs: `GET/POST /api/torneos`, `POST /api/torneos/[id]/participantes`, `POST /api/torneos/[id]/cerrar`. Con auditoría.
+- [x] UI admin: `/admin/torneos` (listado), `nuevo` (TorneoForm con categorías dinámicas), `[id]` (CargarParticipante socio/no socio, tabla de posiciones por categoría con rendimiento % y campeón, CerrarTorneoBtn). Link "Torneos" en el menú.
+- [x] Ranking público: `/ranking` (tabla pública con posición, tirador, índice %, torneos jugados + sección "en formación"). Panel socio: sección "Tu ranking de tiro" (posición, índice, link al ranking completo).
+- [x] Build OK. Probado: crear torneo, cargar participantes (380/400=95%, 350/400=87.5%), tabla + campeón, ranking público con "en formación". Datos de prueba eliminados.
+- Limpieza: removidos duplicados de constantes y validadores acumulados en sesiones previas.

@@ -119,25 +119,20 @@ export const ACCION_LABEL: Record<string, string> = {
   TORNEO_PARTICIPANTE: "Participante cargado en torneo",
 };
 
-export const ESTADO_TORNEO = {
-  ABIERTO: "abierto",
-  CERRADO: "cerrado",
-} as const;
-
-export const ESTADO_PAGO_INSCRIPCION = {
-  PENDIENTE: "pendiente",
-  PAGADO: "pagado",
-} as const;
-
 export const ESTADO_RIFA = {
   ACTIVA: "activa",
   FINALIZADA: "finalizada",
 } as const;
 
+export const ESTADO_TORNEO = {
+  ABIERTO: "abierto",
+  CERRADO: "cerrado",
+} as const;
+
 // Configuración del ranking histórico de tiro
 export const RANKING_CONFIG = {
-  MEJORES_N: 5, // se promedian los mejores N torneos
-  MINIMO_TORNEOS: 2, // mínimo de torneos para entrar al ranking oficial
+  MEJORES_N: 5, // promedia los mejores N rendimientos del socio
+  MINIMO_TORNEOS: 2, // torneos mínimos para entrar al ranking oficial
 } as const;
 
 export const ESTADO_NUMERO_RIFA = {

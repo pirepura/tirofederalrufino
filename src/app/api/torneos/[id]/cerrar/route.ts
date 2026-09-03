@@ -13,13 +13,14 @@ export async function POST(
   if (session?.user.rol !== ROLES.ADMIN) {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
+
   try {
-    const torneo = await cerrarTorneo(params.id);
+    const t = await cerrarTorneo(params.id);
     await auditarConSesion(session.user, {
       accion: ACCION_AUDITORIA.TORNEO_CERRADO,
       entidad: "torneo",
       entidadId: params.id,
-      detalle: `Torneo cerrado: ${torneo.nombre}`,
+      detalle: `Torneo cerrado: ${t.nombre}`,
     });
     return NextResponse.json({ ok: true });
   } catch (e) {

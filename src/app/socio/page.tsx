@@ -149,38 +149,40 @@ export default async function SocioDashboard() {
       )}
 
       {/* Ranking de tiro del socio */}
-      {ranking && (
-        <div className="rounded-xl border border-tiro-dorado/40 bg-tiro-dorado/10 p-5">
-          <p className="text-sm font-semibold text-tiro-azulOscuro">
+      {ranking.item && (
+        <section className="rounded-xl border border-tiro-dorado/40 bg-tiro-dorado/10 p-5">
+          <h2 className="text-sm font-semibold text-tiro-azul">
             🎯 Tu ranking de tiro
-          </p>
-          {ranking.posicion ? (
+          </h2>
+          {ranking.enRanking ? (
             <p className="mt-1 text-sm text-tiro-grisTexto">
               Estás en la posición{" "}
-              <span className="font-bold text-tiro-azul">
+              <span className="text-lg font-bold text-tiro-azul">
                 {ranking.posicion}°
               </span>{" "}
-              de {ranking.totalRankeables}, con un índice de{" "}
+              de {ranking.total}, con un índice de{" "}
               <span className="font-bold text-tiro-azul">
-                {ranking.indice.toFixed(2)}%
+                {ranking.item.indice.toFixed(2)}%
               </span>{" "}
-              ({ranking.torneosJugados} torneo(s) jugado(s)).
+              ({ranking.item.torneosJugados} torneo(s)).
             </p>
           ) : (
             <p className="mt-1 text-sm text-tiro-grisTexto">
-              Jugaste {ranking.torneosJugados} torneo(s). Necesitás al menos 2
-              para entrar al ranking oficial. ¡Seguí participando!
+              Tu índice actual es{" "}
+              <span className="font-bold text-tiro-azul">
+                {ranking.item.indice.toFixed(2)}%
+              </span>
+              . Participá en más torneos para entrar al ranking oficial.
             </p>
           )}
           <a
             href="/ranking"
             target="_blank"
-            rel="noopener noreferrer"
             className="mt-2 inline-block text-sm font-medium text-tiro-azul hover:underline"
           >
             Ver ranking completo →
           </a>
-        </div>
+        </section>
       )}
 
       <Link href="/socio/pagos" className="btn-secondary">
