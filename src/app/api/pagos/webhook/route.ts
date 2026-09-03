@@ -17,7 +17,6 @@ import {
   registrarPagoAutomatico,
 } from "@/lib/cuotas";
 import { confirmarNumeroVendido } from "@/lib/rifas";
-import { marcarInscripcionPagada } from "@/lib/torneos";
 import { registrarAuditoria } from "@/lib/auditoria";
 
 // POST /api/pagos/webhook — recibe notificaciones (IPN/Webhooks) de Mercado Pago.
@@ -114,22 +113,8 @@ export async function POST(req: Request) {
       const ref = pago.external_reference;
 
       if (pago.status === "approved" && ref) {
-        // Inscripción a torneo: external_reference con prefijo "torneo:"
-        if (ref.startsWith("torneo:")) {
-          const participacionId = ref.slice("torneo:".length);
-          await marcarInscripcionPagada(
-            participacionId,
-            "mercadopago",
-            String(dataId)
-          );
-          await registrarAuditoria({
-            accion: ACCION_AUDITORIA.TORNEO_PARTICIPANTE,
-            usuarioRol: "SISTEMA",
-            usuarioNombre: "Mercado Pago",
-            entidad: "torneo",
-            detalle: "Inscripción a torneo pagada por Mercado Pago",
-          });
-        } else if (ref.startsWith("rifa:")) {
+        // Número de rifa: external_reference con prefijo "rifa:"
+        if (ref.startsWith("rifa:")) {
           const numeroRifaId = ref.slice("rifa:".length);
           const num = await confirmarNumeroVendido({
             numeroRifaId,

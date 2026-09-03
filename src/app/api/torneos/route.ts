@@ -5,7 +5,7 @@ import { torneoCreateSchema } from "@/lib/validators";
 import { crearTorneo, listarTorneos } from "@/lib/torneos";
 import { auditarConSesion } from "@/lib/auditoria";
 
-// GET /api/torneos — lista los torneos (admin)
+// GET /api/torneos — lista torneos (admin)
 export async function GET() {
   const session = await getSession();
   if (session?.user.rol !== ROLES.ADMIN) {
@@ -14,13 +14,12 @@ export async function GET() {
   return NextResponse.json(await listarTorneos());
 }
 
-// POST /api/torneos — crea un torneo con categorías (admin)
+// POST /api/torneos — crea un torneo (admin)
 export async function POST(req: Request) {
   const session = await getSession();
   if (session?.user.rol !== ROLES.ADMIN) {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
-
   const body = await req.json().catch(() => ({}));
   const parsed = torneoCreateSchema.safeParse(body);
   if (!parsed.success) {
@@ -29,9 +28,12 @@ export async function POST(req: Request) {
       { status: 400 }
     );
   }
-
   try {
-    const torneo = await crearTorneo(parsed.data);
+    const torneo = await crearTorneo({
+      nombre: parsed.data.nombre,
+      fecha: new Date(parsed.data.fecha),
+      disciplina: parsed.data.disciplina || undefined,
+    });
     await auditarConSesion(session.user, {
       accion: ACCION_AUDITORIA.TORNEO_CREADO,
       entidad: "torneo",

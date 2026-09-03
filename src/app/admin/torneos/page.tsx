@@ -31,6 +31,7 @@ export default async function TorneosPage() {
               <tr>
                 <th className="px-4 py-3 font-semibold">Torneo</th>
                 <th className="px-4 py-3 font-semibold">Fecha</th>
+                <th className="px-4 py-3 font-semibold">Categorías</th>
                 <th className="px-4 py-3 font-semibold">Participantes</th>
                 <th className="px-4 py-3 font-semibold">Estado</th>
                 <th className="px-4 py-3"></th>
@@ -43,6 +44,7 @@ export default async function TorneosPage() {
                   <td className="px-4 py-3 text-tiro-grisTexto">
                     {t.fecha.toLocaleDateString("es-AR")}
                   </td>
+                  <td className="px-4 py-3">{t._count.categorias}</td>
                   <td className="px-4 py-3">{t._count.participaciones}</td>
                   <td className="px-4 py-3">
                     <span
@@ -56,7 +58,10 @@ export default async function TorneosPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <Link href={`/admin/torneos/${t.id}`} className="font-medium text-tiro-azul hover:underline">
+                    <Link
+                      href={`/admin/torneos/${t.id}`}
+                      className="font-medium text-tiro-azul hover:underline"
+                    >
                       Gestionar
                     </Link>
                   </td>

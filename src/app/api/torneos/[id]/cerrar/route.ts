@@ -14,16 +14,16 @@ export async function POST(
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
   try {
-    const t = await cerrarTorneo(params.id);
+    const torneo = await cerrarTorneo(params.id);
     await auditarConSesion(session.user, {
       accion: ACCION_AUDITORIA.TORNEO_CERRADO,
       entidad: "torneo",
       entidadId: params.id,
-      detalle: `Torneo cerrado: ${t.nombre}`,
+      detalle: `Torneo cerrado: ${torneo.nombre}`,
     });
     return NextResponse.json({ ok: true });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Error al cerrar";
+    const msg = e instanceof Error ? e.message : "Error al cerrar el torneo";
     return NextResponse.json({ error: msg }, { status: 400 });
   }
 }

@@ -1,13 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { obtenerTorneo, resultadosPorCategoria } from "@/lib/torneos";
-import { ESTADO_TORNEO, ESTADO_SOCIO, formatearPesos } from "@/lib/constants";
-import {
-  InscribirParticipante,
-  AccionesParticipante,
-  CerrarTorneoBtn,
-} from "@/components/GestionTorneo";
+import { detalleTorneo } from "@/lib/torneos";
+import { ESTADO_TORNEO, ESTADO_SOCIO } from "@/lib/constants";
+import GestionTorneo from "@/components/GestionTorneo";
+import { CerrarTorneoBtn } from "@/components/RankingWidgets";
 
 export const dynamic = "force-dynamic";
 
@@ -16,21 +13,18 @@ export default async function TorneoDetallePage({
 }: {
   params: { id: string };
 }) {
-  const torneo = await obtenerTorneo(params.id);
-  if (!torneo) notFound();
+  const data = await detalleTorneo(params.id);
+  if (!data) notFound();
+  const { torneo, porCategoria } = data;
 
-  const resultados = await resultadosPorCategoria(params.id);
   const abierto = torneo.estado === ESTADO_TORNEO.ABIERTO;
 
+  // Socios activos para el selector de participantes
   const socios = await prisma.socio.findMany({
     where: { estado: ESTADO_SOCIO.ACTIVO },
-    select: { id: true, nombre: true, apellido: true },
-    orderBy: { apellido: "asc" },
+    orderBy: { numeroSocio: "asc" },
+    select: { id: true, nombre: true, apellido: true, numeroSocio: true },
   });
-
-  const totalPagado = torneo.participaciones
-    .filter((p) => p.estadoPago === "pagado")
-    .reduce((s, p) => s + p.montoInscripcion, 0);
 
   return (
     <div className="space-y-6">
@@ -41,37 +35,17 @@ export default async function TorneoDetallePage({
           </Link>
           <h1 className="mt-1 text-2xl font-bold text-tiro-azul">{torneo.nombre}</h1>
           <p className="text-sm text-tiro-grisTexto">
-            {torneo.fecha.toLocaleDateString("es-AR")} · {torneo.disciplina} ·
-            Socio {formatearPesos(torneo.precioSocio)} / No socio{" "}
-            {formatearPesos(torneo.precioNoSocio)}
+            {torneo.fecha.toLocaleDateString("es-AR")} · {torneo.disciplina} ·{" "}
+            <span className={abierto ? "text-green-600" : "text-slate-500"}>
+              {abierto ? "Abierto" : "Cerrado"}
+            </span>
           </p>
         </div>
         {abierto && <CerrarTorneoBtn torneoId={torneo.id} />}
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div className="card">
-          <p className="text-sm text-tiro-grisTexto">Participantes</p>
-          <p className="mt-1 text-2xl font-bold text-tiro-azul">
-            {torneo.participaciones.length}
-          </p>
-        </div>
-        <div className="card">
-          <p className="text-sm text-tiro-grisTexto">Recaudado (inscripciones)</p>
-          <p className="mt-1 text-2xl font-bold text-green-600">
-            {formatearPesos(totalPagado)}
-          </p>
-        </div>
-        <div className="card">
-          <p className="text-sm text-tiro-grisTexto">Categorías</p>
-          <p className="mt-1 text-2xl font-bold text-tiro-azul">
-            {torneo.categorias.length}
-          </p>
-        </div>
-      </div>
-
       {abierto && (
-        <InscribirParticipante
+        <GestionTorneo
           torneoId={torneo.id}
           categorias={torneo.categorias}
           socios={socios}
@@ -81,81 +55,64 @@ export default async function TorneoDetallePage({
       {/* Resultados por categoría */}
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-tiro-azul">
-          Resultados por categoría
+          Resultados y posiciones
         </h2>
-        {resultados.map(({ categoria, participaciones, campeon }) => (
-          <div key={categoria.id} className="card">
-            <div className="mb-2 flex items-center justify-between">
-              <h3 className="font-semibold text-tiro-azul">
-                {categoria.nombre}{" "}
-                <span className="text-sm font-normal text-tiro-grisTexto">
-                  (máx {categoria.puntajeMaximo})
-                </span>
-              </h3>
-              {campeon && (
-                <span className="text-sm font-semibold text-tiro-dorado">
-                  🏆 {campeon.apellido}, {campeon.nombre}
-                </span>
-              )}
-            </div>
-            {participaciones.length === 0 ? (
-              <p className="text-sm text-tiro-grisTexto">Sin inscriptos.</p>
-            ) : (
-              <div className="overflow-x-auto">
+        {porCategoria.length === 0 ? (
+          <div className="card text-center text-tiro-grisTexto">
+            Todavía no hay categorías. Agregá una arriba.
+          </div>
+        ) : (
+          porCategoria.map(({ categoria, participantes, campeon }) => (
+            <div key={categoria.id} className="card">
+              <div className="mb-2 flex items-center justify-between">
+                <h3 className="font-semibold text-tiro-azul">
+                  {categoria.nombre}{" "}
+                  <span className="text-sm font-normal text-tiro-grisTexto">
+                    (máx {categoria.puntajeMaximo})
+                  </span>
+                </h3>
+                {campeon && (
+                  <span className="badge bg-tiro-dorado/20 text-tiro-dorado">
+                    🏆 {campeon.apellido}, {campeon.nombre}
+                  </span>
+                )}
+              </div>
+              {participantes.length === 0 ? (
+                <p className="text-sm text-tiro-grisTexto">Sin participantes aún.</p>
+              ) : (
                 <table className="w-full text-left text-sm">
-                  <thead className="border-b text-tiro-azul">
+                  <thead className="border-b text-tiro-grisTexto">
                     <tr>
-                      <th className="py-2 pr-3 font-semibold">Participante</th>
-                      <th className="py-2 pr-3 font-semibold">Tipo</th>
-                      <th className="py-2 pr-3 font-semibold">Pago</th>
-                      <th className="py-2 pr-3 font-semibold">Puntaje / Rend.</th>
-                      <th className="py-2 pr-3 font-semibold">Acciones</th>
+                      <th className="py-2 font-semibold">Pos.</th>
+                      <th className="py-2 font-semibold">Participante</th>
+                      <th className="py-2 font-semibold">Puntaje</th>
+                      <th className="py-2 font-semibold">Rendimiento</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {participaciones.map((p) => (
+                    {participantes.map((p, i) => (
                       <tr key={p.id} className="border-b last:border-0">
-                        <td className="py-2 pr-3">
+                        <td className="py-2 font-medium">{i + 1}°</td>
+                        <td className="py-2">
                           {p.apellido}, {p.nombre}
-                        </td>
-                        <td className="py-2 pr-3 text-tiro-grisTexto">
-                          {p.esSocio ? "Socio" : "No socio"}
-                        </td>
-                        <td className="py-2 pr-3">
-                          {p.estadoPago === "pagado" ? (
-                            <span className="badge bg-green-100 text-green-800">Pagado</span>
-                          ) : (
-                            <span className="badge bg-amber-100 text-amber-800">Pendiente</span>
-                          )}
-                        </td>
-                        <td className="py-2 pr-3">
-                          {p.puntaje != null ? (
-                            <span>
-                              {p.puntaje}{" "}
-                              <span className="text-tiro-grisTexto">
-                                ({p.rendimiento?.toFixed(1)}%)
-                              </span>
+                          {!p.socioId && (
+                            <span className="ml-1 text-xs text-tiro-grisTexto">
+                              (no socio)
                             </span>
-                          ) : (
-                            <span className="text-tiro-grisTexto">-</span>
                           )}
                         </td>
-                        <td className="py-2 pr-3">
-                          <AccionesParticipante
-                            participacionId={p.id}
-                            estadoPago={p.estadoPago}
-                            metodoPago={p.metodoPago}
-                            puntaje={p.puntaje}
-                          />
+                        <td className="py-2 font-medium">{p.puntaje}</td>
+                        <td className="py-2 text-tiro-grisTexto">
+                          {p.rendimiento.toFixed(1)}%
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-              </div>
-            )}
-          </div>
-        ))}
+              )}
+            </div>
+          ))
+        )}
       </section>
     </div>
   );

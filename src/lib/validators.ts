@@ -125,28 +125,22 @@ export const comprarNumeroSchema = z.object({
 
 
 // Torneo (creación por el admin)
+// Torneos
 export const torneoCreateSchema = z.object({
   nombre: z.string().min(1, "El nombre es obligatorio"),
   fecha: z.string().min(1, "La fecha es obligatoria"),
   disciplina: z.string().optional().or(z.literal("")),
-  precioSocio: z.coerce.number().min(0),
-  precioNoSocio: z.coerce.number().min(0),
-  categorias: z
-    .array(
-      z.object({
-        nombre: z.string().min(1, "Cada categoría necesita nombre"),
-        puntajeMaximo: z.coerce.number().int().min(1, "Puntaje máximo inválido"),
-      })
-    )
-    .min(1, "Cargá al menos una categoría"),
 });
 
-// Inscripción a un torneo
-export const inscripcionTorneoSchema = z.object({
+export const categoriaTorneoSchema = z.object({
+  nombre: z.string().min(1, "El nombre de la categoría es obligatorio"),
+  puntajeMaximo: z.coerce.number().int().min(1, "El puntaje máximo debe ser mayor a 0"),
+});
+
+export const participacionSchema = z.object({
   categoriaId: z.string().min(1, "Elegí una categoría"),
   socioId: z.string().optional().or(z.literal("")),
   nombre: z.string().min(1, "El nombre es obligatorio"),
   apellido: z.string().min(1, "El apellido es obligatorio"),
-  esSocio: z.boolean().default(false),
-  metodoPago: z.enum(["mercadopago", "efectivo"]),
+  puntaje: z.coerce.number().int().min(0, "Puntaje inválido"),
 });

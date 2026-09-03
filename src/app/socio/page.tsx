@@ -149,37 +149,39 @@ export default async function SocioDashboard() {
       )}
 
       {/* Ranking de tiro del socio */}
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold text-tiro-azul">Ranking de tiro</h2>
-        <div className="card flex flex-wrap items-center justify-between gap-3">
+      {ranking && (
+        <div className="rounded-xl border border-tiro-dorado/40 bg-tiro-dorado/10 p-5">
+          <p className="text-sm font-semibold text-tiro-azulOscuro">
+            🎯 Tu ranking de tiro
+          </p>
           {ranking.posicion ? (
-            <div>
-              <p className="text-sm text-tiro-grisTexto">Tu posición</p>
-              <p className="text-2xl font-bold text-tiro-azul">
-                #{ranking.posicion}{" "}
-                <span className="text-base font-normal text-tiro-grisTexto">
-                  de {ranking.total}
-                </span>
-              </p>
-              <p className="text-sm text-tiro-grisTexto">
-                Índice: <span className="font-semibold">{ranking.indice?.toFixed(2)}%</span> ·{" "}
-                {ranking.torneosJugados} torneo(s)
-              </p>
-            </div>
+            <p className="mt-1 text-sm text-tiro-grisTexto">
+              Estás en la posición{" "}
+              <span className="font-bold text-tiro-azul">
+                {ranking.posicion}°
+              </span>{" "}
+              de {ranking.totalRankeables}, con un índice de{" "}
+              <span className="font-bold text-tiro-azul">
+                {ranking.indice.toFixed(2)}%
+              </span>{" "}
+              ({ranking.torneosJugados} torneo(s) jugado(s)).
+            </p>
           ) : (
-            <div>
-              <p className="text-sm text-tiro-grisTexto">
-                {ranking.torneosJugados > 0
-                  ? `Jugaste ${ranking.torneosJugados} torneo(s). Te falta(n) ${ranking.faltanParaRankear} para entrar al ranking.`
-                  : "Todavía no participaste en torneos con puntaje cargado."}
-              </p>
-            </div>
+            <p className="mt-1 text-sm text-tiro-grisTexto">
+              Jugaste {ranking.torneosJugados} torneo(s). Necesitás al menos 2
+              para entrar al ranking oficial. ¡Seguí participando!
+            </p>
           )}
-          <Link href="/ranking" className="btn-secondary text-sm" target="_blank">
-            Ver ranking completo
-          </Link>
+          <a
+            href="/ranking"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 inline-block text-sm font-medium text-tiro-azul hover:underline"
+          >
+            Ver ranking completo →
+          </a>
         </div>
-      </section>
+      )}
 
       <Link href="/socio/pagos" className="btn-secondary">
         Ver historial completo de pagos

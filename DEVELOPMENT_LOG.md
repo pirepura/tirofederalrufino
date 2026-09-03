@@ -389,3 +389,15 @@ Torneos con categorías, inscripción de socios y no socios (con cobro socio/no 
 - [x] Ranking público `/ranking` (índice = promedio %, top con medallas) + tarjeta de ranking en el panel del socio (posición, índice, o cuántos torneos le faltan).
 - [x] Build OK. Probado end-to-end: torneo, inscripción socio/no socio, puntajes (95% y 90% calculados OK), campeón, ranking (excluye no socios correctamente). Datos de prueba eliminados.
 - Nota: cobro online real requiere credenciales de PRODUCCIÓN de MP (hoy TEST).
+
+### Etapa 23 — Torneos de tiro y ranking histórico
+Torneos con categorías (cada una con puntaje máximo), participantes socios/no socios con puntaje, tabla por categoría + campeón, y ranking histórico de socios público + en su panel.
+- [x] Modelos `Torneo` (nombre, fecha, disciplina, estado abierto/cerrado), `CategoriaTorneo` (nombre, puntajeMaximo), `ParticipacionTorneo` (socioId opcional, nombre/apellido, puntaje, rendimiento). Constantes ESTADO_TORNEO + acciones auditoría. `prisma db push`.
+- [x] Se limpió un diseño previo de torneos con inscripción paga (campos precio/inscripción, archivos TorneoForm, /participante/pagar y pago-online, refs en webhook) que no correspondía al enfoque acordado.
+- [x] `src/lib/torneos.ts`: crearTorneo, listarTorneos, agregarCategoria, registrarParticipacion (calcula rendimiento = puntaje/puntajeMaximo*100), cerrarTorneo, detalleTorneo (resultados por categoría + campeón), rankingHistorico (índice = promedio mejores 5 rendimientos, mín. 2 torneos para rankear), rankingDeSocio.
+- [x] Validadores torneoCreate/categoriaTorneo/participacion.
+- [x] APIs: POST/GET /api/torneos, POST /api/torneos/[id]/categorias, /participantes, /cerrar (admin, con auditoría).
+- [x] UI admin: /admin/torneos (listado), /admin/torneos/nuevo, /admin/torneos/[id] (GestionTorneo: agregar categorías y participantes socio/no socio; tabla de posiciones por categoría + campeón; cerrar torneo). Link "Torneos" en el menú.
+- [x] Ranking: página pública /ranking (podio, índice %, "en formación" para <2 torneos) y widget en el panel del socio (posición, índice, torneos).
+- [x] Build OK. Probado end-to-end: torneo + categoría (máx 400) + 2 socios (380→95%, 360→90%), rendimientos y campeón correctos, ranking muestra "en formación" con 1 torneo (correcto). Datos de prueba eliminados.
+- Config ranking: mejores 5 torneos, mínimo 2 para rankear (en src/lib/torneos.ts).
