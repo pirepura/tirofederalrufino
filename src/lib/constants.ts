@@ -134,6 +134,12 @@ export const ESTADO_RIFA = {
   FINALIZADA: "finalizada",
 } as const;
 
+// Configuración del ranking histórico de tiro
+export const RANKING_CONFIG = {
+  MEJORES_N: 5, // se promedian los mejores N torneos
+  MINIMO_TORNEOS: 2, // mínimo de torneos para entrar al ranking oficial
+} as const;
+
 export const ESTADO_NUMERO_RIFA = {
   DISPONIBLE: "disponible",
   EN_PROCESO: "en_proceso",
