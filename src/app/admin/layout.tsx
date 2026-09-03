@@ -8,6 +8,7 @@ const adminLinks = [
   { href: "/admin/categorias", label: "Categorías" },
   { href: "/admin/cuotas", label: "Cuotas" },
   { href: "/admin/rifas", label: "Rifas" },
+  { href: "/admin/torneos", label: "Torneos" },
   { href: "/admin/auditoria", label: "Auditoría" },
   { href: "/admin/perfil", label: "Mi cuenta" },
 ];

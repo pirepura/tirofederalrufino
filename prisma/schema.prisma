@@ -64,6 +64,7 @@ model Socio {
 
   cuotas     Cuota[]
   alquileres AlquilerLinea[]
+  participaciones ParticipacionTorneo[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -287,4 +288,70 @@ model NumeroRifa {
 
   @@unique([rifaId, numero])
   @@index([estado])
+}
+
+// ---------------------------------------------------------------------------
+// Torneos de tiro, inscripciones (con cobro) y ranking histórico
+// ---------------------------------------------------------------------------
+
+model Torneo {
+  id         String   @id @default(cuid())
+  nombre     String
+  fecha      DateTime
+  disciplina String   @default("Aire comprimido")
+  estado     String   @default("abierto") // abierto | cerrado
+
+  // Costo de inscripción (dos valores: socio y no socio)
+  precioSocio   Float @default(0)
+  precioNoSocio Float @default(0)
+
+  categorias      CategoriaTorneo[]
+  participaciones ParticipacionTorneo[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CategoriaTorneo {
+  id            String @id @default(cuid())
+  torneoId      String
+  torneo        Torneo @relation(fields: [torneoId], references: [id], onDelete: Cascade)
+  nombre        String
+  puntajeMaximo Int // máximo posible (para calcular el rendimiento %)
+
+  participaciones ParticipacionTorneo[]
+
+  @@unique([torneoId, nombre])
+}
+
+model ParticipacionTorneo {
+  id          String          @id @default(cuid())
+  torneoId    String
+  torneo      Torneo          @relation(fields: [torneoId], references: [id], onDelete: Cascade)
+  categoriaId String
+  categoria   CategoriaTorneo @relation(fields: [categoriaId], references: [id], onDelete: Cascade)
+
+  // Vínculo con socio (null si es no socio). Guardamos nombre/apellido siempre.
+  socioId  String?
+  socio    Socio?  @relation(fields: [socioId], references: [id], onDelete: SetNull)
+  nombre   String
+  apellido String
+
+  // Inscripción / cobro
+  esSocio        Boolean @default(false)
+  montoInscripcion Float  @default(0)
+  estadoPago     String  @default("pendiente") // pendiente | pagado
+  metodoPago     String? // "mercadopago" | "efectivo"
+  mpPreferenceId String?
+  mpPaymentId    String?
+  fechaPago      DateTime?
+
+  // Resultado (lo carga el admin luego)
+  puntaje     Int?   // null hasta que se carga el puntaje
+  rendimiento Float? // puntaje / puntajeMaximo * 100
+
+  createdAt DateTime @default(now())
+
+  @@index([socioId])
+  @@index([torneoId])
 }

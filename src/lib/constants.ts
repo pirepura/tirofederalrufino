@@ -81,6 +81,10 @@ export const ACCION_AUDITORIA = {
   RIFA_CREADA: "RIFA_CREADA",
   RIFA_FINALIZADA: "RIFA_FINALIZADA",
   RIFA_NUMERO_VENDIDO: "RIFA_NUMERO_VENDIDO",
+  // Torneos
+  TORNEO_CREADO: "TORNEO_CREADO",
+  TORNEO_CERRADO: "TORNEO_CERRADO",
+  TORNEO_PARTICIPANTE: "TORNEO_PARTICIPANTE",
 } as const;
 export type AccionAuditoria =
   (typeof ACCION_AUDITORIA)[keyof typeof ACCION_AUDITORIA];
@@ -110,7 +114,20 @@ export const ACCION_LABEL: Record<string, string> = {
   RIFA_CREADA: "Rifa creada",
   RIFA_FINALIZADA: "Rifa finalizada",
   RIFA_NUMERO_VENDIDO: "Número de rifa vendido",
+  TORNEO_CREADO: "Torneo creado",
+  TORNEO_CERRADO: "Torneo cerrado",
+  TORNEO_PARTICIPANTE: "Participante cargado en torneo",
 };
+
+export const ESTADO_TORNEO = {
+  ABIERTO: "abierto",
+  CERRADO: "cerrado",
+} as const;
+
+export const ESTADO_PAGO_INSCRIPCION = {
+  PENDIENTE: "pendiente",
+  PAGADO: "pagado",
+} as const;
 
 export const ESTADO_RIFA = {
   ACTIVA: "activa",

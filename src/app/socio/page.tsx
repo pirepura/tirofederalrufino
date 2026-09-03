@@ -11,6 +11,7 @@ import {
   formatearPesos,
   nombreMes,
 } from "@/lib/constants";
+import { rankingDeSocio } from "@/lib/torneos";
 import { CuotaBadge } from "@/components/EstadoBadge";
 import PagarCuotaBtn from "@/components/PagarCuotaBtn";
 import InformarPagoBtn from "@/components/InformarPagoBtn";
@@ -35,6 +36,9 @@ export default async function SocioDashboard() {
     where: { socioId, estado: ESTADO_CUOTA.EN_REVISION },
     orderBy: [{ periodoAnio: "asc" }, { periodoMes: "asc" }],
   });
+
+  // Posición del socio en el ranking de tiro
+  const ranking = await rankingDeSocio(socioId);
 
   return (
     <div className="space-y-6">
@@ -143,6 +147,39 @@ export default async function SocioDashboard() {
           </div>
         </section>
       )}
+
+      {/* Ranking de tiro del socio */}
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold text-tiro-azul">Ranking de tiro</h2>
+        <div className="card flex flex-wrap items-center justify-between gap-3">
+          {ranking.posicion ? (
+            <div>
+              <p className="text-sm text-tiro-grisTexto">Tu posición</p>
+              <p className="text-2xl font-bold text-tiro-azul">
+                #{ranking.posicion}{" "}
+                <span className="text-base font-normal text-tiro-grisTexto">
+                  de {ranking.total}
+                </span>
+              </p>
+              <p className="text-sm text-tiro-grisTexto">
+                Índice: <span className="font-semibold">{ranking.indice?.toFixed(2)}%</span> ·{" "}
+                {ranking.torneosJugados} torneo(s)
+              </p>
+            </div>
+          ) : (
+            <div>
+              <p className="text-sm text-tiro-grisTexto">
+                {ranking.torneosJugados > 0
+                  ? `Jugaste ${ranking.torneosJugados} torneo(s). Te falta(n) ${ranking.faltanParaRankear} para entrar al ranking.`
+                  : "Todavía no participaste en torneos con puntaje cargado."}
+              </p>
+            </div>
+          )}
+          <Link href="/ranking" className="btn-secondary text-sm" target="_blank">
+            Ver ranking completo
+          </Link>
+        </div>
+      </section>
 
       <Link href="/socio/pagos" className="btn-secondary">
         Ver historial completo de pagos

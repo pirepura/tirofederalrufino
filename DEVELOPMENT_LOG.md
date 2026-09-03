@@ -376,3 +376,16 @@ Rifa con venta pública de números por link, pago con Mercado Pago, comprobante
 - [x] Comprobante PDF con escudo, datos del sorteo, comprador y número.
 - [x] Build OK. Probado end-to-end en local (crear rifa, pública, comprar→preferencia MP, confirmar venta, PDF). Datos de prueba eliminados.
 - Nota: cobro real requiere credenciales de PRODUCCIÓN de MP (hoy TEST). Fotos de premios se borran al finalizar la rifa.
+
+### Etapa 23 — Torneos de tiro, inscripciones con cobro y ranking histórico
+Torneos con categorías, inscripción de socios y no socios (con cobro socio/no socio, online o efectivo), carga de puntajes por el admin, tabla por categoría con campeón y ranking histórico de socios.
+- [x] Modelos `Torneo` (nombre, fecha, disciplina, estado, precioSocio, precioNoSocio), `CategoriaTorneo` (nombre, puntajeMaximo), `ParticipacionTorneo` (socioId opcional, nombre/apellido, esSocio, montoInscripcion, estadoPago, metodoPago, puntaje, rendimiento). Relación en Socio. `prisma db push`.
+- [x] Constantes ESTADO_TORNEO, ESTADO_PAGO_INSCRIPCION + acciones auditoría. (Se resolvió duplicado de ESTADO_TORNEO.)
+- [x] `src/lib/torneos.ts`: crearTorneo, listarTorneos, obtenerTorneo, inscribirParticipante, marcarInscripcionPagada, cargarPuntaje (rendimiento=puntaje/max*100), resultadosPorCategoria (+campeón), cerrarTorneo, rankingHistorico (promedio mejores 5, mín. 2 torneos, solo socios), rankingDeSocio.
+- [x] Validadores torneoCreateSchema, inscripcionTorneoSchema.
+- [x] APIs: `GET/POST /api/torneos`, `POST /api/torneos/[id]/participantes`, `/cerrar`, `POST /api/torneos/participante/[id]/puntaje`, `/pagar`, `/pago-online` (genera preferencia MP con external_reference "torneo:<id>"). Todo auditado.
+- [x] Webhook MP extendido: external_reference "torneo:<id>" marca inscripción pagada.
+- [x] UI admin: `/admin/torneos` (listado), `/admin/torneos/nuevo` (TorneoForm con categorías dinámicas), `/admin/torneos/[id]` (inscribir, tabla por categoría, campeón 🏆, cargar puntaje, generar link/marcar pago, cerrar). Link "Torneos" en el menú.
+- [x] Ranking público `/ranking` (índice = promedio %, top con medallas) + tarjeta de ranking en el panel del socio (posición, índice, o cuántos torneos le faltan).
+- [x] Build OK. Probado end-to-end: torneo, inscripción socio/no socio, puntajes (95% y 90% calculados OK), campeón, ranking (excluye no socios correctamente). Datos de prueba eliminados.
+- Nota: cobro online real requiere credenciales de PRODUCCIÓN de MP (hoy TEST).
