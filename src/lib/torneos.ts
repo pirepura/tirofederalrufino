@@ -1,11 +1,13 @@
 import { prisma } from "@/lib/db";
 import { ESTADO_TORNEO, RANKING_CONFIG } from "@/lib/constants";
 
-// Crea un torneo con sus categorías.
+// Crea un torneo con sus categorías y precios de inscripción.
 export async function crearTorneo(input: {
   nombre: string;
   fecha: string;
   disciplina?: string;
+  precioSocio?: number;
+  precioNoSocio?: number;
   categorias: { nombre: string; puntajeMaximo: number }[];
 }) {
   return prisma.torneo.create({
@@ -14,6 +16,8 @@ export async function crearTorneo(input: {
       fecha: new Date(input.fecha),
       disciplina: input.disciplina || "Aire comprimido",
       estado: ESTADO_TORNEO.ABIERTO,
+      precioSocio: input.precioSocio ?? 0,
+      precioNoSocio: input.precioNoSocio ?? 0,
       categorias: {
         create: input.categorias.map((c) => ({
           nombre: c.nombre,
@@ -22,6 +26,35 @@ export async function crearTorneo(input: {
       },
     },
     include: { categorias: true },
+  });
+}
+
+// Actualiza datos básicos y precios de un torneo (no toca categorías).
+export async function actualizarTorneo(
+  id: string,
+  input: {
+    nombre?: string;
+    fecha?: string;
+    disciplina?: string;
+    precioSocio?: number;
+    precioNoSocio?: number;
+  }
+) {
+  return prisma.torneo.update({
+    where: { id },
+    data: {
+      ...(input.nombre !== undefined ? { nombre: input.nombre } : {}),
+      ...(input.fecha !== undefined ? { fecha: new Date(input.fecha) } : {}),
+      ...(input.disciplina !== undefined
+        ? { disciplina: input.disciplina || "Aire comprimido" }
+        : {}),
+      ...(input.precioSocio !== undefined
+        ? { precioSocio: input.precioSocio }
+        : {}),
+      ...(input.precioNoSocio !== undefined
+        ? { precioNoSocio: input.precioNoSocio }
+        : {}),
+    },
   });
 }
 
@@ -38,36 +71,69 @@ export async function obtenerTorneo(id: string) {
     include: {
       categorias: { orderBy: { nombre: "asc" } },
       participaciones: {
-        orderBy: { puntaje: "desc" },
+        orderBy: [{ estadoPago: "asc" }, { apellido: "asc" }],
         include: { categoria: true },
       },
     },
   });
 }
 
-// Registra la participación de alguien (socio o no socio) con su puntaje.
-// Calcula el rendimiento = puntaje / puntajeMaximo * 100.
-export async function registrarParticipacion(input: {
+// El próximo torneo abierto (para el panel del socio y el link público).
+export async function proximoTorneoAbierto() {
+  return prisma.torneo.findFirst({
+    where: { estado: ESTADO_TORNEO.ABIERTO },
+    orderBy: { fecha: "asc" },
+    include: { categorias: { orderBy: { nombre: "asc" } } },
+  });
+}
+
+// Verifica que la categoría pertenezca al torneo y la devuelve.
+async function categoriaDelTorneo(torneoId: string, categoriaId: string) {
+  const categoria = await prisma.categoriaTorneo.findUnique({
+    where: { id: categoriaId },
+  });
+  if (!categoria || categoria.torneoId !== torneoId) {
+    throw new Error("Categoría inválida para este torneo");
+  }
+  return categoria;
+}
+
+// ---------------------------------------------------------------------------
+// Inscripción con cobro
+// ---------------------------------------------------------------------------
+
+// Crea una inscripción PENDIENTE (sin puntaje aún). El monto se toma del
+// precio del torneo según sea socio o no. Devuelve la participación creada.
+export async function inscribir(input: {
   torneoId: string;
   categoriaId: string;
   socioId?: string | null;
   nombre: string;
   apellido: string;
-  puntaje: number;
+  dni?: string | null;
+  telefono?: string | null;
+  email?: string | null;
+  metodoPago: "mercadopago" | "efectivo" | "transferencia";
 }) {
-  const categoria = await prisma.categoriaTorneo.findUnique({
-    where: { id: input.categoriaId },
+  const torneo = await prisma.torneo.findUnique({
+    where: { id: input.torneoId },
   });
-  if (!categoria || categoria.torneoId !== input.torneoId) {
-    throw new Error("Categoría inválida para este torneo");
+  if (!torneo) throw new Error("Torneo inexistente");
+  if (torneo.estado !== ESTADO_TORNEO.ABIERTO) {
+    throw new Error("La inscripción a este torneo está cerrada");
   }
-  if (input.puntaje < 0 || input.puntaje > categoria.puntajeMaximo) {
-    throw new Error(
-      `El puntaje debe estar entre 0 y ${categoria.puntajeMaximo}`
-    );
-  }
+  await categoriaDelTorneo(input.torneoId, input.categoriaId);
 
-  const rendimiento = (input.puntaje / categoria.puntajeMaximo) * 100;
+  const esSocio = !!input.socioId;
+  const monto = esSocio ? torneo.precioSocio : torneo.precioNoSocio;
+
+  // Evitar doble inscripción de un mismo socio en el torneo.
+  if (esSocio) {
+    const ya = await prisma.participacionTorneo.findFirst({
+      where: { torneoId: input.torneoId, socioId: input.socioId },
+    });
+    if (ya) throw new Error("Ya estás inscripto en este torneo");
+  }
 
   return prisma.participacionTorneo.create({
     data: {
@@ -76,6 +142,144 @@ export async function registrarParticipacion(input: {
       socioId: input.socioId || null,
       nombre: input.nombre,
       apellido: input.apellido,
+      dni: input.dni || null,
+      telefono: input.telefono || null,
+      email: input.email || null,
+      esSocio,
+      montoInscripcion: monto,
+      estadoPago: "pendiente",
+      metodoPago: input.metodoPago,
+    },
+  });
+}
+
+// Marca una inscripción como pagada (por webhook de MP o confirmación manual del admin).
+export async function confirmarPagoInscripcion(input: {
+  participacionId: string;
+  mpPaymentId?: string | null;
+}) {
+  const p = await prisma.participacionTorneo.findUnique({
+    where: { id: input.participacionId },
+  });
+  if (!p || p.estadoPago === "pagado") return p;
+  return prisma.participacionTorneo.update({
+    where: { id: input.participacionId },
+    data: {
+      estadoPago: "pagado",
+      mpPaymentId: input.mpPaymentId ?? p.mpPaymentId,
+      fechaPago: new Date(),
+    },
+  });
+}
+
+// Guarda el id de preferencia de MP en la inscripción.
+export async function guardarPreferenciaInscripcion(
+  participacionId: string,
+  mpPreferenceId: string
+) {
+  return prisma.participacionTorneo.update({
+    where: { id: participacionId },
+    data: { mpPreferenceId },
+  });
+}
+
+// El admin cambia la categoría de un inscripto (ej: se equivocó al anotarse).
+export async function cambiarCategoriaParticipante(
+  participacionId: string,
+  categoriaId: string
+) {
+  const p = await prisma.participacionTorneo.findUnique({
+    where: { id: participacionId },
+  });
+  if (!p) throw new Error("Inscripción inexistente");
+  await categoriaDelTorneo(p.torneoId, categoriaId);
+  return prisma.participacionTorneo.update({
+    where: { id: participacionId },
+    data: { categoriaId },
+  });
+}
+
+// El admin carga (o corrige) el puntaje de un inscripto. Recalcula rendimiento.
+export async function cargarPuntaje(participacionId: string, puntaje: number) {
+  const p = await prisma.participacionTorneo.findUnique({
+    where: { id: participacionId },
+    include: { categoria: true },
+  });
+  if (!p) throw new Error("Inscripción inexistente");
+  if (puntaje < 0 || puntaje > p.categoria.puntajeMaximo) {
+    throw new Error(`El puntaje debe estar entre 0 y ${p.categoria.puntajeMaximo}`);
+  }
+  const rendimiento = (puntaje / p.categoria.puntajeMaximo) * 100;
+  return prisma.participacionTorneo.update({
+    where: { id: participacionId },
+    data: { puntaje, rendimiento },
+  });
+}
+
+// El admin elimina una inscripción.
+export async function eliminarParticipacion(participacionId: string) {
+  return prisma.participacionTorneo.delete({ where: { id: participacionId } });
+}
+
+// Recaudación de un torneo: total cobrado (pagado) y desglose.
+export async function recaudacionTorneo(torneoId: string) {
+  const participaciones = await prisma.participacionTorneo.findMany({
+    where: { torneoId },
+    select: { estadoPago: true, montoInscripcion: true, esSocio: true },
+  });
+  let recaudado = 0;
+  let pendiente = 0;
+  let socios = 0;
+  let noSocios = 0;
+  for (const p of participaciones) {
+    if (p.estadoPago === "pagado") recaudado += p.montoInscripcion;
+    else pendiente += p.montoInscripcion;
+    if (p.esSocio) socios++;
+    else noSocios++;
+  }
+  return {
+    recaudado,
+    pendiente,
+    inscriptos: participaciones.length,
+    socios,
+    noSocios,
+  };
+}
+
+// Carga directa por el admin de un participante que ya jugó (con puntaje).
+// Marca la inscripción como pagada (el admin la registra tras cobrar en la mesa).
+export async function registrarParticipacion(input: {
+  torneoId: string;
+  categoriaId: string;
+  socioId?: string | null;
+  nombre: string;
+  apellido: string;
+  puntaje: number;
+}) {
+  const categoria = await categoriaDelTorneo(input.torneoId, input.categoriaId);
+  if (input.puntaje < 0 || input.puntaje > categoria.puntajeMaximo) {
+    throw new Error(`El puntaje debe estar entre 0 y ${categoria.puntajeMaximo}`);
+  }
+
+  const rendimiento = (input.puntaje / categoria.puntajeMaximo) * 100;
+  const torneo = await prisma.torneo.findUnique({ where: { id: input.torneoId } });
+  const esSocio = !!input.socioId;
+  const monto = esSocio
+    ? torneo?.precioSocio ?? 0
+    : torneo?.precioNoSocio ?? 0;
+
+  return prisma.participacionTorneo.create({
+    data: {
+      torneoId: input.torneoId,
+      categoriaId: input.categoriaId,
+      socioId: input.socioId || null,
+      nombre: input.nombre,
+      apellido: input.apellido,
+      esSocio,
+      montoInscripcion: monto,
+      estadoPago: "pagado",
+      metodoPago: "efectivo",
+      fechaPago: new Date(),
       puntaje: input.puntaje,
       rendimiento,
     },
@@ -90,6 +294,7 @@ export async function cerrarTorneo(id: string) {
 }
 
 // Resultados de un torneo agrupados por categoría, con el campeón de cada una.
+// Solo incluye a quienes ya tienen puntaje cargado.
 export type ResultadoCategoria = {
   categoria: { id: string; nombre: string; puntajeMaximo: number };
   posiciones: {
@@ -109,7 +314,10 @@ export async function resultadosPorCategoria(
     where: { torneoId },
     orderBy: { nombre: "asc" },
     include: {
-      participaciones: { orderBy: { puntaje: "desc" } },
+      participaciones: {
+        where: { puntaje: { not: null } },
+        orderBy: { puntaje: "desc" },
+      },
     },
   });
 
@@ -123,8 +331,8 @@ export async function resultadosPorCategoria(
       posicion: i + 1,
       nombre: p.nombre,
       apellido: p.apellido,
-      puntaje: p.puntaje,
-      rendimiento: p.rendimiento,
+      puntaje: p.puntaje ?? 0,
+      rendimiento: p.rendimiento ?? 0,
       esSocio: !!p.socioId,
     })),
   }));
@@ -144,9 +352,9 @@ export async function rankingHistorico(): Promise<{
   ranking: RankingItem[];
   enFormacion: RankingItem[];
 }> {
-  // Solo participaciones de socios (socioId no nulo)
+  // Solo participaciones de socios con puntaje ya cargado.
   const participaciones = await prisma.participacionTorneo.findMany({
-    where: { socioId: { not: null } },
+    where: { socioId: { not: null }, rendimiento: { not: null } },
     include: {
       socio: { select: { id: true, nombre: true, apellido: true } },
     },
@@ -159,7 +367,7 @@ export async function rankingHistorico(): Promise<{
   >();
 
   for (const p of participaciones) {
-    if (!p.socioId || !p.socio) continue;
+    if (!p.socioId || !p.socio || p.rendimiento == null) continue;
     const actual = porSocio.get(p.socioId) ?? {
       nombre: p.socio.nombre,
       apellido: p.socio.apellido,

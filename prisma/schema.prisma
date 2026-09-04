@@ -301,6 +301,10 @@ model Torneo {
   disciplina String   @default("Aire comprimido")
   estado     String   @default("abierto") // abierto | cerrado
 
+  // Precios de inscripción diferenciados. El admin los define al crear/editar.
+  precioSocio   Float @default(0)
+  precioNoSocio Float @default(0)
+
   categorias      CategoriaTorneo[]
   participaciones ParticipacionTorneo[]
 
@@ -333,12 +337,27 @@ model ParticipacionTorneo {
   nombre   String
   apellido String
 
-  // Resultado
-  puntaje     Int   // puntaje obtenido
-  rendimiento Float // puntaje / puntajeMaximo * 100
+  // Datos de contacto (se completan para no socios desde el link público).
+  dni      String?
+  telefono String?
+  email    String?
+
+  // Cobro de la inscripción
+  esSocio          Boolean  @default(false)
+  montoInscripcion Float    @default(0)
+  estadoPago       String   @default("pendiente") // pendiente | pagado
+  metodoPago       String? // mercadopago | efectivo | transferencia
+  mpPreferenceId   String?
+  mpPaymentId      String?
+  fechaPago        DateTime?
+
+  // Resultado (se cargan luego del torneo; null hasta entonces)
+  puntaje     Int?   // puntaje obtenido
+  rendimiento Float? // puntaje / puntajeMaximo * 100
 
   createdAt DateTime @default(now())
 
   @@index([socioId])
   @@index([torneoId])
+  @@index([estadoPago])
 }

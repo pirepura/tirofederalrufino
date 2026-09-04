@@ -17,6 +17,7 @@ import {
   registrarPagoAutomatico,
 } from "@/lib/cuotas";
 import { confirmarNumeroVendido } from "@/lib/rifas";
+import { confirmarPagoInscripcion } from "@/lib/torneos";
 import { registrarAuditoria } from "@/lib/auditoria";
 
 // POST /api/pagos/webhook — recibe notificaciones (IPN/Webhooks) de Mercado Pago.
@@ -128,6 +129,23 @@ export async function POST(req: Request) {
               entidad: "rifa",
               entidadId: num.rifaId,
               detalle: `Número ${num.numero} vendido a ${num.compradorNombre ?? ""} ${num.compradorApellido ?? ""}`.trim(),
+            });
+          }
+        } else if (ref.startsWith("torneo:")) {
+          // Inscripción a torneo: external_reference con prefijo "torneo:"
+          const participacionId = ref.slice("torneo:".length);
+          const insc = await confirmarPagoInscripcion({
+            participacionId,
+            mpPaymentId: String(dataId),
+          });
+          if (insc) {
+            await registrarAuditoria({
+              accion: ACCION_AUDITORIA.TORNEO_PAGO_CONFIRMADO,
+              usuarioRol: "SISTEMA",
+              usuarioNombre: "Mercado Pago",
+              entidad: "torneo",
+              entidadId: insc.torneoId,
+              detalle: `Inscripción pagada: ${insc.apellido}, ${insc.nombre} (${insc.montoInscripcion})`,
             });
           }
         } else {

@@ -2,9 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { ESTADO_TORNEO, ESTADO_SOCIO } from "@/lib/constants";
-import { resultadosPorCategoria } from "@/lib/torneos";
+import { resultadosPorCategoria, recaudacionTorneo } from "@/lib/torneos";
 import CargarParticipante from "@/components/CargarParticipante";
 import CerrarTorneoBtn from "@/components/CerrarTorneoBtn";
+import PreciosTorneo from "@/components/PreciosTorneo";
+import GestionInscriptos from "@/components/GestionInscriptos";
 
 export const dynamic = "force-dynamic";
 
@@ -15,12 +17,36 @@ export default async function TorneoDetallePage({
 }) {
   const torneo = await prisma.torneo.findUnique({
     where: { id: params.id },
-    include: { categorias: { orderBy: { nombre: "asc" } } },
+    include: {
+      categorias: { orderBy: { nombre: "asc" } },
+      participaciones: {
+        orderBy: [{ estadoPago: "asc" }, { apellido: "asc" }],
+      },
+    },
   });
   if (!torneo) notFound();
 
   const resultados = await resultadosPorCategoria(torneo.id);
+  const recaudacion = await recaudacionTorneo(torneo.id);
   const abierto = torneo.estado === ESTADO_TORNEO.ABIERTO;
+
+  const appUrl = (process.env.APP_URL ?? "http://localhost:3000").trim();
+  const linkPublico = `${appUrl}/torneo/${torneo.id}`;
+
+  const inscriptos = torneo.participaciones.map((p) => ({
+    id: p.id,
+    nombre: p.nombre,
+    apellido: p.apellido,
+    esSocio: p.esSocio,
+    dni: p.dni,
+    telefono: p.telefono,
+    email: p.email,
+    categoriaId: p.categoriaId,
+    montoInscripcion: p.montoInscripcion,
+    estadoPago: p.estadoPago,
+    metodoPago: p.metodoPago,
+    puntaje: p.puntaje,
+  }));
 
   // Socios activos para el selector (solo si el torneo está abierto)
   const socios = abierto
@@ -46,12 +72,41 @@ export default async function TorneoDetallePage({
         {abierto && <CerrarTorneoBtn torneoId={torneo.id} />}
       </div>
 
-      {abierto && torneo.categorias.length > 0 && (
-        <CargarParticipante
-          torneoId={torneo.id}
+      {/* Precios, recaudación y link público */}
+      <PreciosTorneo
+        torneoId={torneo.id}
+        precioSocio={torneo.precioSocio}
+        precioNoSocio={torneo.precioNoSocio}
+        linkPublico={linkPublico}
+        recaudacion={recaudacion}
+        editable={abierto}
+      />
+
+      {/* Inscriptos: pago, categoría, puntaje */}
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold text-tiro-azul">
+          Inscriptos ({inscriptos.length})
+        </h2>
+        <GestionInscriptos
+          inscriptos={inscriptos}
           categorias={torneo.categorias}
-          socios={socios}
+          editable={abierto}
         />
+      </section>
+
+      {abierto && torneo.categorias.length > 0 && (
+        <details className="card">
+          <summary className="cursor-pointer text-sm font-semibold text-tiro-azul">
+            Cargar participante manualmente (ya pagó en la mesa)
+          </summary>
+          <div className="mt-4">
+            <CargarParticipante
+              torneoId={torneo.id}
+              categorias={torneo.categorias}
+              socios={socios}
+            />
+          </div>
+        </details>
       )}
 
       {/* Resultados por categoría */}

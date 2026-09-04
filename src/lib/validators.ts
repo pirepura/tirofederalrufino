@@ -129,6 +129,8 @@ export const torneoCreateSchema = z.object({
   nombre: z.string().min(1, "El nombre es obligatorio"),
   fecha: z.string().min(1, "La fecha es obligatoria"),
   disciplina: z.string().optional().or(z.literal("")),
+  precioSocio: z.coerce.number().min(0, "Precio inválido").default(0),
+  precioNoSocio: z.coerce.number().min(0, "Precio inválido").default(0),
   categorias: z
     .array(
       z.object({
@@ -137,6 +139,29 @@ export const torneoCreateSchema = z.object({
       })
     )
     .min(1, "Cargá al menos una categoría"),
+});
+
+// Inscripción de un socio (desde su panel): elige categoría y método de pago.
+export const inscripcionSocioSchema = z.object({
+  torneoId: z.string().min(1),
+  categoriaId: z.string().min(1, "Elegí una categoría"),
+  metodoPago: z.enum(["mercadopago", "efectivo", "transferencia"], {
+    errorMap: () => ({ message: "Elegí un método de pago" }),
+  }),
+});
+
+// Inscripción de un no socio (desde el link público): datos + método de pago.
+export const inscripcionPublicaSchema = z.object({
+  torneoId: z.string().min(1),
+  categoriaId: z.string().min(1, "Elegí una categoría"),
+  nombre: z.string().min(1, "El nombre es obligatorio"),
+  apellido: z.string().min(1, "El apellido es obligatorio"),
+  dni: z.string().min(1, "El DNI es obligatorio"),
+  telefono: z.string().min(1, "El teléfono es obligatorio"),
+  email: z.string().email("Email inválido"),
+  metodoPago: z.enum(["mercadopago", "efectivo", "transferencia"], {
+    errorMap: () => ({ message: "Elegí un método de pago" }),
+  }),
 });
 
 // Participante de torneo

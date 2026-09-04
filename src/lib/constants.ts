@@ -85,6 +85,8 @@ export const ACCION_AUDITORIA = {
   TORNEO_CREADO: "TORNEO_CREADO",
   TORNEO_CERRADO: "TORNEO_CERRADO",
   TORNEO_PARTICIPANTE: "TORNEO_PARTICIPANTE",
+  TORNEO_INSCRIPCION: "TORNEO_INSCRIPCION",
+  TORNEO_PAGO_CONFIRMADO: "TORNEO_PAGO_CONFIRMADO",
 } as const;
 export type AccionAuditoria =
   (typeof ACCION_AUDITORIA)[keyof typeof ACCION_AUDITORIA];
@@ -117,6 +119,8 @@ export const ACCION_LABEL: Record<string, string> = {
   TORNEO_CREADO: "Torneo creado",
   TORNEO_CERRADO: "Torneo cerrado",
   TORNEO_PARTICIPANTE: "Participante cargado en torneo",
+  TORNEO_INSCRIPCION: "Inscripción a torneo",
+  TORNEO_PAGO_CONFIRMADO: "Pago de inscripción confirmado",
 };
 
 export const ESTADO_RIFA = {

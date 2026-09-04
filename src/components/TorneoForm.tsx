@@ -10,6 +10,8 @@ export default function TorneoForm() {
   const [nombre, setNombre] = useState("");
   const [fecha, setFecha] = useState("");
   const [disciplina, setDisciplina] = useState("Aire comprimido");
+  const [precioSocio, setPrecioSocio] = useState("");
+  const [precioNoSocio, setPrecioNoSocio] = useState("");
   const [cats, setCats] = useState<Cat[]>([{ nombre: "", puntajeMaximo: "" }]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -39,6 +41,8 @@ export default function TorneoForm() {
         nombre,
         fecha,
         disciplina,
+        precioSocio: Number(precioSocio) || 0,
+        precioNoSocio: Number(precioNoSocio) || 0,
         categorias: cats.map((c) => ({
           nombre: c.nombre,
           puntajeMaximo: Number(c.puntajeMaximo),
@@ -95,6 +99,41 @@ export default function TorneoForm() {
               className="input"
               value={disciplina}
               onChange={(e) => setDisciplina(e.target.value)}
+            />
+          </div>
+        </div>
+      </section>
+
+      <section className="card space-y-4">
+        <h2 className="text-sm font-bold uppercase tracking-wide text-tiro-azul">
+          Precio de inscripción
+        </h2>
+        <p className="text-xs text-tiro-grisTexto">
+          Podés cobrar distinto a socios y no socios. Dejá en 0 si es gratis.
+        </p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="label">Precio socio ($)</label>
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              className="input"
+              value={precioSocio}
+              onChange={(e) => setPrecioSocio(e.target.value)}
+              placeholder="Ej: 0 (gratis) o 2000"
+            />
+          </div>
+          <div>
+            <label className="label">Precio no socio ($)</label>
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              className="input"
+              value={precioNoSocio}
+              onChange={(e) => setPrecioNoSocio(e.target.value)}
+              placeholder="Ej: 5000"
             />
           </div>
         </div>

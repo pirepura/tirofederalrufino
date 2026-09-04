@@ -11,11 +11,13 @@ import {
   formatearPesos,
   nombreMes,
 } from "@/lib/constants";
-import { rankingDeSocio } from "@/lib/torneos";
+import { rankingDeSocio, proximoTorneoAbierto } from "@/lib/torneos";
+import { mercadoPagoConfigurado } from "@/lib/mercadopago";
 import { CuotaBadge } from "@/components/EstadoBadge";
 import PagarCuotaBtn from "@/components/PagarCuotaBtn";
 import InformarPagoBtn from "@/components/InformarPagoBtn";
 import DebitoAutomatico from "@/components/DebitoAutomatico";
+import InscripcionSocioTorneo from "@/components/InscripcionSocioTorneo";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +41,23 @@ export default async function SocioDashboard() {
 
   // Posición del socio en el ranking de tiro
   const ranking = await rankingDeSocio(socioId);
+
+  // Próximo torneo abierto y estado de inscripción del socio
+  const torneo = await proximoTorneoAbierto();
+  let yaInscripto: { estadoPago: string; categoriaNombre: string } | null = null;
+  if (torneo) {
+    const insc = await prisma.participacionTorneo.findFirst({
+      where: { torneoId: torneo.id, socioId },
+      include: { categoria: { select: { nombre: true } } },
+    });
+    if (insc) {
+      yaInscripto = {
+        estadoPago: insc.estadoPago,
+        categoriaNombre: insc.categoria.nombre,
+      };
+    }
+  }
+  const mpDisponible = mercadoPagoConfigurado();
 
   return (
     <div className="space-y-6">
@@ -72,6 +91,25 @@ export default async function SocioDashboard() {
             ¡Estás al día! No tenés cuotas pendientes. ✅
           </p>
         </div>
+      )}
+
+      {/* Próximo torneo: inscripción del socio */}
+      {torneo && (
+        <InscripcionSocioTorneo
+          torneo={{
+            id: torneo.id,
+            nombre: torneo.nombre,
+            fecha: torneo.fecha.toISOString(),
+            disciplina: torneo.disciplina,
+            precioSocio: torneo.precioSocio,
+            categorias: torneo.categorias.map((c) => ({
+              id: c.id,
+              nombre: c.nombre,
+            })),
+          }}
+          yaInscripto={yaInscripto}
+          mpDisponible={mpDisponible}
+        />
       )}
 
       {/* Débito automático */}
