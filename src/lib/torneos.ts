@@ -6,6 +6,8 @@ export async function crearTorneo(input: {
   nombre: string;
   fecha: string;
   disciplina?: string;
+  descripcion?: string;
+  imagenData?: string;
   precioSocio?: number;
   precioNoSocio?: number;
   categorias: { nombre: string; puntajeMaximo: number }[];
@@ -15,6 +17,8 @@ export async function crearTorneo(input: {
       nombre: input.nombre,
       fecha: new Date(input.fecha),
       disciplina: input.disciplina || "Aire comprimido",
+      descripcion: input.descripcion || null,
+      imagenData: input.imagenData || null,
       estado: ESTADO_TORNEO.ABIERTO,
       precioSocio: input.precioSocio ?? 0,
       precioNoSocio: input.precioNoSocio ?? 0,
@@ -36,6 +40,8 @@ export async function actualizarTorneo(
     nombre?: string;
     fecha?: string;
     disciplina?: string;
+    descripcion?: string | null;
+    imagenData?: string | null;
     precioSocio?: number;
     precioNoSocio?: number;
   }
@@ -47,6 +53,12 @@ export async function actualizarTorneo(
       ...(input.fecha !== undefined ? { fecha: new Date(input.fecha) } : {}),
       ...(input.disciplina !== undefined
         ? { disciplina: input.disciplina || "Aire comprimido" }
+        : {}),
+      ...(input.descripcion !== undefined
+        ? { descripcion: input.descripcion || null }
+        : {}),
+      ...(input.imagenData !== undefined
+        ? { imagenData: input.imagenData || null }
         : {}),
       ...(input.precioSocio !== undefined
         ? { precioSocio: input.precioSocio }

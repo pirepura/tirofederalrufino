@@ -45,6 +45,17 @@ export default async function TorneoPublicoPage({
           </p>
         </div>
 
+        {torneo.imagenData && (
+          <div className="mb-6 overflow-hidden rounded-xl shadow">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={torneo.imagenData}
+              alt={torneo.nombre}
+              className="max-h-80 w-full object-cover"
+            />
+          </div>
+        )}
+
         <div className="mb-6 text-center">
           <h1 className="text-3xl font-bold text-tiro-azul">{torneo.nombre}</h1>
           <p className="mt-2 text-tiro-grisTexto">
@@ -56,6 +67,11 @@ export default async function TorneoPublicoPage({
             })}{" "}
             · {torneo.disciplina}
           </p>
+          {torneo.descripcion && (
+            <p className="mt-3 whitespace-pre-line text-tiro-grisTexto">
+              {torneo.descripcion}
+            </p>
+          )}
         </div>
 
         {torneo.categorias.length > 0 && (

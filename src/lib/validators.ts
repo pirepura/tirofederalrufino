@@ -129,6 +129,8 @@ export const torneoCreateSchema = z.object({
   nombre: z.string().min(1, "El nombre es obligatorio"),
   fecha: z.string().min(1, "La fecha es obligatoria"),
   disciplina: z.string().optional().or(z.literal("")),
+  descripcion: z.string().optional().or(z.literal("")),
+  imagenData: z.string().optional().or(z.literal("")),
   precioSocio: z.coerce.number().min(0, "Precio inválido").default(0),
   precioNoSocio: z.coerce.number().min(0, "Precio inválido").default(0),
   categorias: z

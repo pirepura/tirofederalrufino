@@ -10,11 +10,30 @@ export default function TorneoForm() {
   const [nombre, setNombre] = useState("");
   const [fecha, setFecha] = useState("");
   const [disciplina, setDisciplina] = useState("Aire comprimido");
+  const [descripcion, setDescripcion] = useState("");
+  const [imagenData, setImagenData] = useState("");
   const [precioSocio, setPrecioSocio] = useState("");
   const [precioNoSocio, setPrecioNoSocio] = useState("");
   const [cats, setCats] = useState<Cat[]>([{ nombre: "", puntajeMaximo: "" }]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  function elegirImagen(e: React.ChangeEvent<HTMLInputElement>) {
+    setError("");
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setError("El archivo debe ser una imagen.");
+      return;
+    }
+    if (file.size > 3 * 1024 * 1024) {
+      setError("La imagen es demasiado grande (máximo 3 MB).");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setImagenData(reader.result as string);
+    reader.readAsDataURL(file);
+  }
 
   function setCat(i: number, patch: Partial<Cat>) {
     setCats((prev) => prev.map((c, idx) => (idx === i ? { ...c, ...patch } : c)));
@@ -41,6 +60,8 @@ export default function TorneoForm() {
         nombre,
         fecha,
         disciplina,
+        descripcion,
+        imagenData,
         precioSocio: Number(precioSocio) || 0,
         precioNoSocio: Number(precioNoSocio) || 0,
         categorias: cats.map((c) => ({
@@ -100,6 +121,42 @@ export default function TorneoForm() {
               value={disciplina}
               onChange={(e) => setDisciplina(e.target.value)}
             />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="label">Descripción (opcional)</label>
+            <textarea
+              className="input"
+              rows={3}
+              value={descripcion}
+              onChange={(e) => setDescripcion(e.target.value)}
+              placeholder="Información adicional sobre el torneo: reglas, horarios, etc."
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="label">Imagen del torneo (opcional, máx 3 MB)</label>
+            <input
+              type="file"
+              accept="image/*"
+              className="input"
+              onChange={elegirImagen}
+            />
+            {imagenData && (
+              <div className="mt-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={imagenData}
+                  alt="Preview"
+                  className="max-h-48 rounded-lg object-contain"
+                />
+                <button
+                  type="button"
+                  className="mt-1 text-xs text-red-600 hover:underline"
+                  onClick={() => setImagenData("")}
+                >
+                  Quitar imagen
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </section>

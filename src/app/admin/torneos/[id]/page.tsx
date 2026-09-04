@@ -7,6 +7,7 @@ import CargarParticipante from "@/components/CargarParticipante";
 import CerrarTorneoBtn from "@/components/CerrarTorneoBtn";
 import PreciosTorneo from "@/components/PreciosTorneo";
 import GestionInscriptos from "@/components/GestionInscriptos";
+import TorneoImagenDescripcion from "@/components/TorneoImagenDescripcion";
 
 export const dynamic = "force-dynamic";
 
@@ -71,6 +72,14 @@ export default async function TorneoDetallePage({
         </div>
         {abierto && <CerrarTorneoBtn torneoId={torneo.id} />}
       </div>
+
+      {/* Imagen y descripción del torneo */}
+      <TorneoImagenDescripcion
+        torneoId={torneo.id}
+        descripcion={torneo.descripcion}
+        imagenData={torneo.imagenData}
+        editable={abierto}
+      />
 
       {/* Precios, recaudación y link público */}
       <PreciosTorneo

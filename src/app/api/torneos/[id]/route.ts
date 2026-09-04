@@ -18,6 +18,8 @@ export async function PATCH(
     nombre?: string;
     fecha?: string;
     disciplina?: string;
+    descripcion?: string | null;
+    imagenData?: string | null;
     precioSocio?: number;
     precioNoSocio?: number;
   } = {};
@@ -25,6 +27,8 @@ export async function PATCH(
   if (typeof body.nombre === "string") data.nombre = body.nombre;
   if (typeof body.fecha === "string") data.fecha = body.fecha;
   if (typeof body.disciplina === "string") data.disciplina = body.disciplina;
+  if (typeof body.descripcion === "string") data.descripcion = body.descripcion;
+  if (typeof body.imagenData === "string") data.imagenData = body.imagenData;
   if (body.precioSocio !== undefined) {
     const n = Number(body.precioSocio);
     if (!Number.isFinite(n) || n < 0) {

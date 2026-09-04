@@ -295,11 +295,13 @@ model NumeroRifa {
 // ---------------------------------------------------------------------------
 
 model Torneo {
-  id         String   @id @default(cuid())
-  nombre     String
-  fecha      DateTime
-  disciplina String   @default("Aire comprimido")
-  estado     String   @default("abierto") // abierto | cerrado
+  id          String   @id @default(cuid())
+  nombre      String
+  fecha       DateTime
+  disciplina  String   @default("Aire comprimido")
+  estado      String   @default("abierto") // abierto | cerrado
+  descripcion String? // texto libre para la página pública
+  imagenData  String? // imagen del torneo en base64 (data URL)
 
   // Precios de inscripción diferenciados. El admin los define al crear/editar.
   precioSocio   Float @default(0)
