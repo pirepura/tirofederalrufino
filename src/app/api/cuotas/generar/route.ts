@@ -10,6 +10,7 @@ import {
 import { prisma } from "@/lib/db";
 import { generarCuotasSchema } from "@/lib/validators";
 import { auditarConSesion } from "@/lib/auditoria";
+import { avisarCuotasCreadas } from "@/lib/avisos";
 
 // POST /api/cuotas/generar — genera la cuota de un período para todos los
 // socios ACTIVOS que aún no la tengan (solo admin).
@@ -40,6 +41,7 @@ export async function POST(req: Request) {
   let creadas = 0;
   let omitidas = 0;
   let sinMonto = 0;
+  const idsCreadas: string[] = [];
 
   for (const socio of sociosActivos) {
     // El monto sale del precio actual de la categoría del socio.
@@ -67,7 +69,7 @@ export async function POST(req: Request) {
       continue;
     }
 
-    await prisma.cuota.create({
+    const nueva = await prisma.cuota.create({
       data: {
         socioId: socio.id,
         periodoMes,
@@ -78,8 +80,13 @@ export async function POST(req: Request) {
         estado: ESTADO_CUOTA.PENDIENTE,
       },
     });
+    idsCreadas.push(nueva.id);
     creadas++;
   }
+
+  // Aviso automático por WhatsApp a los socios de las cuotas recién creadas.
+  // Best effort: si WhatsApp no está configurado, avisados queda en 0.
+  const avisados = await avisarCuotasCreadas(idsCreadas);
 
   await auditarConSesion(session.user, {
     accion: ACCION_AUDITORIA.CUOTAS_GENERADAS,
@@ -87,5 +94,5 @@ export async function POST(req: Request) {
     detalle: `Generación de cuotas ${nombreMes(periodoMes)} ${periodoAnio}: ${creadas} creada(s), ${omitidas} ya existían.`,
   });
 
-  return NextResponse.json({ creadas, omitidas, sinMonto });
+  return NextResponse.json({ creadas, omitidas, sinMonto, avisados });
 }

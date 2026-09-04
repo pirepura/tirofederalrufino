@@ -36,6 +36,9 @@ export default function GenerarCuotasForm() {
       if (data.sinMonto > 0) {
         texto += ` ${data.sinMonto} socio(s) sin categoría o con cuota en $0 fueron omitidos.`;
       }
+      if (typeof data.avisados === "number" && data.avisados > 0) {
+        texto += ` Se enviaron ${data.avisados} aviso(s) por WhatsApp.`;
+      }
       setMsg(texto);
       router.refresh();
     } else {

@@ -119,6 +119,10 @@ model Cuota {
   mpPreferenceId String?
   mpPaymentId    String?
 
+  // Avisos por WhatsApp (para no reenviar y dar trazabilidad)
+  avisoCreacionEnviadoEn     DateTime? // aviso al generar la cuota
+  recordatorioEnviadoEn      DateTime? // recordatorio ~15 días si sigue impaga
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
