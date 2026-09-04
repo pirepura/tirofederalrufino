@@ -210,6 +210,96 @@ export async function registrarPagoAutomatico(params: {
   });
 }
 
+// Descripción fija que identifica la cuota consolidada de deuda anterior.
+// Se usa para garantizar una sola por socio (migración desde papel).
+export const DESCRIPCION_DEUDA_ANTERIOR = "Deuda anterior";
+
+// Registra (o actualiza) la deuda anterior consolidada de un socio.
+// Crea una única cuota marcada como VENCIDA con el monto total adeudado antes
+// de entrar al sistema. Si el socio ya tiene una deuda anterior cargada, la
+// actualiza en vez de duplicarla (garantiza una sola por socio).
+export async function registrarDeudaAnterior(params: {
+  socioId: string;
+  monto: number;
+  detalle?: string;
+}) {
+  if (params.monto <= 0) {
+    throw new Error("El monto de la deuda debe ser mayor a 0");
+  }
+
+  const socio = await prisma.socio.findUnique({ where: { id: params.socioId } });
+  if (!socio) throw new Error("Socio inexistente");
+
+  const descripcion = params.detalle?.trim()
+    ? `${DESCRIPCION_DEUDA_ANTERIOR} — ${params.detalle.trim()}`
+    : DESCRIPCION_DEUDA_ANTERIOR;
+
+  // Buscar una deuda anterior ya cargada para este socio (por prefijo de descripción).
+  const existente = await prisma.cuota.findFirst({
+    where: {
+      socioId: params.socioId,
+      descripcion: { startsWith: DESCRIPCION_DEUDA_ANTERIOR },
+    },
+  });
+
+  if (existente) {
+    // No permitir tocar una deuda que ya fue pagada.
+    if (existente.estado === ESTADO_CUOTA.PAGADA) {
+      throw new Error(
+        "Este socio ya tiene una deuda anterior registrada y saldada"
+      );
+    }
+    return prisma.cuota.update({
+      where: { id: existente.id },
+      data: {
+        monto: params.monto,
+        descripcion,
+        estado: ESTADO_CUOTA.VENCIDA,
+      },
+    });
+  }
+
+  // Período marcador: usamos la fecha actual (mes/año de la migración). El
+  // @@unique por período no molesta porque hay una sola deuda anterior por socio.
+  const ahora = new Date();
+  const periodoMes = ahora.getMonth() + 1;
+  const periodoAnio = ahora.getFullYear();
+
+  // Si ya existiera una cuota real de este período, corremos el marcador al
+  // mes anterior para no chocar con el @@unique.
+  let mes = periodoMes;
+  let anio = periodoAnio;
+  const choca = await prisma.cuota.findUnique({
+    where: {
+      socioId_periodoMes_periodoAnio: {
+        socioId: params.socioId,
+        periodoMes: mes,
+        periodoAnio: anio,
+      },
+    },
+  });
+  if (choca) {
+    if (mes === 1) {
+      mes = 12;
+      anio -= 1;
+    } else {
+      mes -= 1;
+    }
+  }
+
+  return prisma.cuota.create({
+    data: {
+      socioId: params.socioId,
+      periodoMes: mes,
+      periodoAnio: anio,
+      monto: params.monto,
+      descripcion,
+      fechaVencimiento: ahora, // ya vencida
+      estado: ESTADO_CUOTA.VENCIDA,
+    },
+  });
+}
+
 // Cuotas con pago informado pendiente de verificación (para el admin).
 export async function cuotasEnRevision() {
   return prisma.cuota.findMany({

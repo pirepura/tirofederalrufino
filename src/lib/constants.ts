@@ -61,6 +61,7 @@ export const ACCION_AUDITORIA = {
   // Cuotas
   CUOTAS_GENERADAS: "CUOTAS_GENERADAS",
   CUOTA_ELIMINADA: "CUOTA_ELIMINADA",
+  DEUDA_ANTERIOR_CARGADA: "DEUDA_ANTERIOR_CARGADA",
   PAGO_MANUAL: "PAGO_MANUAL",
   PAGO_MERCADOPAGO: "PAGO_MERCADOPAGO",
   PAGO_DEBITO_AUTOMATICO: "PAGO_DEBITO_AUTOMATICO",
@@ -101,6 +102,7 @@ export const ACCION_LABEL: Record<string, string> = {
   SOLICITUD_RECHAZADA: "Solicitud rechazada",
   CUOTAS_GENERADAS: "Cuotas generadas",
   CUOTA_ELIMINADA: "Cuota eliminada",
+  DEUDA_ANTERIOR_CARGADA: "Deuda anterior cargada",
   PAGO_MANUAL: "Pago manual registrado",
   PAGO_MERCADOPAGO: "Pago con Mercado Pago",
   PAGO_DEBITO_AUTOMATICO: "Pago por débito automático",

@@ -6,8 +6,10 @@ import {
   formatearPesos,
   nombreMes,
 } from "@/lib/constants";
+import { ESTADO_SOCIO } from "@/lib/constants";
 import { CuotaBadge } from "@/components/EstadoBadge";
 import GenerarCuotasForm from "@/components/GenerarCuotasForm";
+import DeudaAnteriorForm from "@/components/DeudaAnteriorForm";
 import RevisarPagoBtn from "@/components/RevisarPagoBtn";
 
 export const dynamic = "force-dynamic";
@@ -17,6 +19,13 @@ export default async function CuotasPage() {
 
   // Pagos informados por socios, pendientes de verificación
   const enRevision = await cuotasEnRevision();
+
+  // Socios activos para el selector de deuda anterior
+  const sociosActivos = await prisma.socio.findMany({
+    where: { estado: ESTADO_SOCIO.ACTIVO },
+    orderBy: { apellido: "asc" },
+    select: { id: true, numeroSocio: true, nombre: true, apellido: true },
+  });
 
   // Últimas cuotas impagas de todo el club (vista de morosos)
   const impagas = await prisma.cuota.findMany({
@@ -77,6 +86,13 @@ export default async function CuotasPage() {
           Generar cuotas del mes
         </h2>
         <GenerarCuotasForm />
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold text-tiro-azul">
+          Cargar deuda anterior (migración)
+        </h2>
+        <DeudaAnteriorForm socios={sociosActivos} />
       </section>
 
       <section className="space-y-3">
