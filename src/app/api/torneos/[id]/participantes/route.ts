@@ -25,19 +25,27 @@ export async function POST(
   }
 
   try {
+    const puntaje =
+      parsed.data.puntaje === "" || parsed.data.puntaje == null
+        ? null
+        : Number(parsed.data.puntaje);
     const p = await registrarParticipacion({
       torneoId: params.id,
       categoriaId: parsed.data.categoriaId,
       socioId: parsed.data.socioId || null,
       nombre: parsed.data.nombre,
       apellido: parsed.data.apellido,
-      puntaje: parsed.data.puntaje,
+      telefono: parsed.data.telefono || null,
+      email: parsed.data.email || null,
+      puntaje,
     });
     await auditarConSesion(session.user, {
       accion: ACCION_AUDITORIA.TORNEO_PARTICIPANTE,
       entidad: "torneo",
       entidadId: params.id,
-      detalle: `Participante ${parsed.data.apellido}, ${parsed.data.nombre} — ${parsed.data.puntaje} pts`,
+      detalle: `Participante ${parsed.data.apellido}, ${parsed.data.nombre}${
+        puntaje != null ? ` — ${puntaje} pts` : " (sin puntaje)"
+      }`,
     });
     return NextResponse.json(p, { status: 201 });
   } catch (e) {

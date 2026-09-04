@@ -258,7 +258,8 @@ export async function recaudacionTorneo(torneoId: string) {
   };
 }
 
-// Carga directa por el admin de un participante que ya jugó (con puntaje).
+// Carga directa por el admin de un participante en la mesa (pago presencial).
+// El puntaje es opcional: se puede inscribir sin cargarlo y completarlo después.
 // Marca la inscripción como pagada (el admin la registra tras cobrar en la mesa).
 export async function registrarParticipacion(input: {
   torneoId: string;
@@ -266,14 +267,22 @@ export async function registrarParticipacion(input: {
   socioId?: string | null;
   nombre: string;
   apellido: string;
-  puntaje: number;
+  telefono?: string | null;
+  email?: string | null;
+  puntaje?: number | null;
 }) {
   const categoria = await categoriaDelTorneo(input.torneoId, input.categoriaId);
-  if (input.puntaje < 0 || input.puntaje > categoria.puntajeMaximo) {
-    throw new Error(`El puntaje debe estar entre 0 y ${categoria.puntajeMaximo}`);
+
+  let puntaje: number | null = null;
+  let rendimiento: number | null = null;
+  if (input.puntaje != null) {
+    if (input.puntaje < 0 || input.puntaje > categoria.puntajeMaximo) {
+      throw new Error(`El puntaje debe estar entre 0 y ${categoria.puntajeMaximo}`);
+    }
+    puntaje = input.puntaje;
+    rendimiento = (input.puntaje / categoria.puntajeMaximo) * 100;
   }
 
-  const rendimiento = (input.puntaje / categoria.puntajeMaximo) * 100;
   const torneo = await prisma.torneo.findUnique({ where: { id: input.torneoId } });
   const esSocio = !!input.socioId;
   const monto = esSocio
@@ -287,12 +296,14 @@ export async function registrarParticipacion(input: {
       socioId: input.socioId || null,
       nombre: input.nombre,
       apellido: input.apellido,
+      telefono: input.telefono || null,
+      email: input.email || null,
       esSocio,
       montoInscripcion: monto,
       estadoPago: "pagado",
       metodoPago: "efectivo",
       fechaPago: new Date(),
-      puntaje: input.puntaje,
+      puntaje,
       rendimiento,
     },
   });

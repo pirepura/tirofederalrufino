@@ -167,11 +167,16 @@ export const inscripcionPublicaSchema = z.object({
   }),
 });
 
-// Participante de torneo
+// Participante de torneo (carga manual del admin en la mesa).
+// El puntaje es opcional: se puede inscribir sin cargarlo y completarlo después.
 export const participanteSchema = z.object({
   categoriaId: z.string().min(1, "Elegí una categoría"),
   socioId: z.string().optional().or(z.literal("")),
   nombre: z.string().min(1, "El nombre es obligatorio"),
   apellido: z.string().min(1, "El apellido es obligatorio"),
-  puntaje: z.coerce.number().int().min(0, "Puntaje inválido"),
+  telefono: z.string().optional().or(z.literal("")),
+  email: z.string().email("Email inválido").optional().or(z.literal("")),
+  puntaje: z
+    .union([z.coerce.number().int().min(0, "Puntaje inválido"), z.literal(""), z.null()])
+    .optional(),
 });

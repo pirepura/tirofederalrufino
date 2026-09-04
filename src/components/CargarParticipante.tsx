@@ -21,6 +21,8 @@ export default function CargarParticipante({
   const [socioId, setSocioId] = useState("");
   const [nombre, setNombre] = useState("");
   const [apellido, setApellido] = useState("");
+  const [telefono, setTelefono] = useState("");
+  const [email, setEmail] = useState("");
   const [puntaje, setPuntaje] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -29,7 +31,11 @@ export default function CargarParticipante({
     e.preventDefault();
     setError("");
 
-    let payload: Record<string, unknown> = { categoriaId, puntaje: Number(puntaje) };
+    // El puntaje es opcional: se envía solo si se cargó.
+    let payload: Record<string, unknown> = {
+      categoriaId,
+      puntaje: puntaje === "" ? null : Number(puntaje),
+    };
 
     if (esSocio) {
       if (!socioId) {
@@ -48,7 +54,7 @@ export default function CargarParticipante({
         setError("Completá nombre y apellido del participante.");
         return;
       }
-      payload = { ...payload, nombre, apellido };
+      payload = { ...payload, nombre, apellido, telefono, email };
     }
 
     setLoading(true);
@@ -67,6 +73,8 @@ export default function CargarParticipante({
     setSocioId("");
     setNombre("");
     setApellido("");
+    setTelefono("");
+    setEmail("");
     setPuntaje("");
     router.refresh();
   }
@@ -98,14 +106,14 @@ export default function CargarParticipante({
           </select>
         </div>
         <div>
-          <label className="label">Puntaje</label>
+          <label className="label">Puntaje (opcional)</label>
           <input
             type="number"
             min={0}
             className="input"
             value={puntaje}
             onChange={(e) => setPuntaje(e.target.value)}
-            required
+            placeholder="Podés cargarlo después"
           />
         </div>
       </div>
@@ -146,6 +154,25 @@ export default function CargarParticipante({
           <div>
             <label className="label">Apellido</label>
             <input className="input" value={apellido} onChange={(e) => setApellido(e.target.value)} />
+          </div>
+          <div>
+            <label className="label">Teléfono (opcional)</label>
+            <input
+              className="input"
+              value={telefono}
+              onChange={(e) => setTelefono(e.target.value)}
+              placeholder="Ej: 2477 123456"
+            />
+          </div>
+          <div>
+            <label className="label">Email (opcional)</label>
+            <input
+              type="email"
+              className="input"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Ej: tirador@mail.com"
+            />
           </div>
         </div>
       )}

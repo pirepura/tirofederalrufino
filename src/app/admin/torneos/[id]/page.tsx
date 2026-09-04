@@ -106,7 +106,7 @@ export default async function TorneoDetallePage({
       {abierto && torneo.categorias.length > 0 && (
         <details className="card">
           <summary className="cursor-pointer text-sm font-semibold text-tiro-azul">
-            Cargar participante manualmente (ya pagó en la mesa)
+            Cargar participante manualmente (pago en la mesa · el puntaje es opcional)
           </summary>
           <div className="mt-4">
             <CargarParticipante
