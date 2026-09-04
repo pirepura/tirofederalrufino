@@ -99,6 +99,15 @@ export async function proximoTorneoAbierto() {
   });
 }
 
+// Todos los torneos abiertos (el club puede tener varios en simultáneo).
+export async function torneosAbiertos() {
+  return prisma.torneo.findMany({
+    where: { estado: ESTADO_TORNEO.ABIERTO },
+    orderBy: { fecha: "asc" },
+    include: { categorias: { orderBy: { nombre: "asc" } } },
+  });
+}
+
 // Verifica que la categoría pertenezca al torneo y la devuelve.
 async function categoriaDelTorneo(torneoId: string, categoriaId: string) {
   const categoria = await prisma.categoriaTorneo.findUnique({

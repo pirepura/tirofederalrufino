@@ -11,7 +11,7 @@ import {
   formatearPesos,
   nombreMes,
 } from "@/lib/constants";
-import { rankingDeSocio, proximoTorneoAbierto } from "@/lib/torneos";
+import { rankingDeSocio, torneosAbiertos } from "@/lib/torneos";
 import { rifasActivasParaSocio } from "@/lib/rifas";
 import { mercadoPagoConfigurado } from "@/lib/mercadopago";
 import { CuotaBadge } from "@/components/EstadoBadge";
@@ -44,20 +44,25 @@ export default async function SocioDashboard() {
   // Posición del socio en el ranking de tiro
   const ranking = await rankingDeSocio(socioId);
 
-  // Próximo torneo abierto y estado de inscripción del socio
-  const torneo = await proximoTorneoAbierto();
-  let yaInscripto: { estadoPago: string; categoriaNombre: string } | null = null;
-  if (torneo) {
-    const insc = await prisma.participacionTorneo.findFirst({
-      where: { torneoId: torneo.id, socioId },
-      include: { categoria: { select: { nombre: true } } },
+  // Todos los torneos abiertos y el estado de inscripción del socio en cada uno.
+  const torneos = await torneosAbiertos();
+  const inscripciones = await prisma.participacionTorneo.findMany({
+    where: {
+      socioId,
+      torneoId: { in: torneos.map((t) => t.id) },
+    },
+    include: { categoria: { select: { nombre: true } } },
+  });
+  // Mapa torneoId -> estado de inscripción del socio
+  const inscripcionPorTorneo = new Map<
+    string,
+    { estadoPago: string; categoriaNombre: string }
+  >();
+  for (const insc of inscripciones) {
+    inscripcionPorTorneo.set(insc.torneoId, {
+      estadoPago: insc.estadoPago,
+      categoriaNombre: insc.categoria.nombre,
     });
-    if (insc) {
-      yaInscripto = {
-        estadoPago: insc.estadoPago,
-        categoriaNombre: insc.categoria.nombre,
-      };
-    }
   }
   const mpDisponible = mercadoPagoConfigurado();
 
@@ -98,9 +103,10 @@ export default async function SocioDashboard() {
         </div>
       )}
 
-      {/* Próximo torneo: inscripción del socio */}
-      {torneo && (
+      {/* Torneos abiertos: inscripción del socio (puede haber varios a la vez) */}
+      {torneos.map((torneo) => (
         <InscripcionSocioTorneo
+          key={torneo.id}
           torneo={{
             id: torneo.id,
             nombre: torneo.nombre,
@@ -112,10 +118,10 @@ export default async function SocioDashboard() {
               nombre: c.nombre,
             })),
           }}
-          yaInscripto={yaInscripto}
+          yaInscripto={inscripcionPorTorneo.get(torneo.id) ?? null}
           mpDisponible={mpDisponible}
         />
-      )}
+      ))}
 
       {/* Rifas disponibles */}
       <RifasSocio rifas={rifas} />
