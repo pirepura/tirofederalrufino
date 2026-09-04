@@ -26,6 +26,7 @@ type PremioInput = { posicion: number; titulo: string; fotoDataUrl?: string };
 export async function crearRifa(input: {
   titulo: string;
   descripcion?: string;
+  imagenData?: string;
   cantidadNumeros: number;
   cifras: number;
   precioNumero: number;
@@ -38,6 +39,7 @@ export async function crearRifa(input: {
       slug,
       titulo: input.titulo,
       descripcion: input.descripcion || null,
+      imagenData: input.imagenData || null,
       cantidadNumeros: input.cantidadNumeros,
       cifras: input.cifras,
       precioNumero: input.precioNumero,
@@ -82,6 +84,8 @@ export async function listarRifas() {
       });
       return {
         ...r,
+        // La portada no se usa en la lista del admin: evitamos enviar el base64 pesado.
+        imagenData: null,
         vendidos,
         recaudado: vendidos * r.precioNumero,
       };
@@ -199,6 +203,6 @@ export async function finalizarRifa(rifaId: string) {
 
   return prisma.rifa.update({
     where: { id: rifaId },
-    data: { estado: ESTADO_RIFA.FINALIZADA },
+    data: { estado: ESTADO_RIFA.FINALIZADA, imagenData: null },
   });
 }

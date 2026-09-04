@@ -11,6 +11,7 @@ export default function RifaForm() {
   const router = useRouter();
   const [titulo, setTitulo] = useState("");
   const [descripcion, setDescripcion] = useState("");
+  const [imagenData, setImagenData] = useState("");
   const [cifras, setCifras] = useState(3);
   const [cantidad, setCantidad] = useState("1000");
   const [precio, setPrecio] = useState("");
@@ -27,6 +28,23 @@ export default function RifaForm() {
 
   function setPremio(i: number, patch: Partial<PremioState>) {
     setPremios((prev) => prev.map((p, idx) => (idx === i ? { ...p, ...patch } : p)));
+  }
+
+  function elegirImagenRifa(e: React.ChangeEvent<HTMLInputElement>) {
+    setError("");
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setError("La imagen de la rifa debe ser una imagen.");
+      return;
+    }
+    if (file.size > 3 * 1024 * 1024) {
+      setError("La imagen es demasiado grande (máximo 3 MB).");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setImagenData(reader.result as string);
+    reader.readAsDataURL(file);
   }
 
   function elegirFoto(i: number, e: React.ChangeEvent<HTMLInputElement>) {
@@ -68,6 +86,7 @@ export default function RifaForm() {
       body: JSON.stringify({
         titulo,
         descripcion,
+        imagenData,
         cifras,
         cantidadNumeros: cant,
         precioNumero: Number(precio),
@@ -120,6 +139,32 @@ export default function RifaForm() {
             onChange={(e) => setDescripcion(e.target.value)}
             placeholder="Se sortea con los últimos dígitos de la Lotería Nacional..."
           />
+        </div>
+        <div>
+          <label className="label">Imagen de la rifa (opcional, máx 3 MB)</label>
+          <input
+            type="file"
+            accept="image/*"
+            className="block w-full text-sm"
+            onChange={elegirImagenRifa}
+          />
+          {imagenData && (
+            <div className="mt-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={imagenData}
+                alt="Preview"
+                className="max-h-48 rounded-lg object-contain"
+              />
+              <button
+                type="button"
+                className="mt-1 block text-xs text-red-600 hover:underline"
+                onClick={() => setImagenData("")}
+              >
+                Quitar imagen
+              </button>
+            </div>
+          )}
         </div>
         <div className="grid gap-4 sm:grid-cols-3">
           <div>

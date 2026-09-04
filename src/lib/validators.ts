@@ -101,6 +101,7 @@ export type CategoriaInput = z.infer<typeof categoriaSchema>;
 export const rifaCreateSchema = z.object({
   titulo: z.string().min(1, "El título es obligatorio"),
   descripcion: z.string().optional().or(z.literal("")),
+  imagenData: z.string().optional().or(z.literal("")),
   cifras: z.coerce.number().int().min(1).max(4),
   cantidadNumeros: z.coerce.number().int().min(2).max(10000),
   precioNumero: z.coerce.number().min(1, "El precio debe ser mayor a 0"),

@@ -40,6 +40,18 @@ export default async function RifaPublicaPage({
           </p>
         </div>
 
+        {/* Imagen/portada de la rifa */}
+        {rifa.imagenData && (
+          <div className="mb-6 overflow-hidden rounded-xl shadow">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={rifa.imagenData}
+              alt={rifa.titulo}
+              className="max-h-80 w-full object-cover"
+            />
+          </div>
+        )}
+
         {/* Título y descripción */}
         <div className="mb-6 text-center">
           <h1 className="text-3xl font-bold text-tiro-azul">{rifa.titulo}</h1>

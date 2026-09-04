@@ -237,6 +237,7 @@ model Rifa {
   slug        String  @unique // identificador para la URL pública
   titulo      String
   descripcion String?
+  imagenData  String? // imagen/portada de la rifa en base64 (se borra al finalizar)
 
   // Configuración de números
   cantidadNumeros Int // cuántos números tiene la rifa
