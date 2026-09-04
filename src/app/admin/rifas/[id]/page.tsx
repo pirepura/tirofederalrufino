@@ -6,8 +6,9 @@ import {
   ESTADO_RIFA,
   formatearPesos,
 } from "@/lib/constants";
-import { formatearNumero } from "@/lib/rifas";
+import { formatearNumero, obtenerGanadoresRifa } from "@/lib/rifas";
 import { CopiarLink, FinalizarRifaBtn } from "@/components/RifaAcciones";
+import CargarGanadoresRifa from "@/components/CargarGanadoresRifa";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +33,10 @@ export default async function RifaDetallePage({
 
   const appUrl = process.env.APP_URL ?? "http://localhost:3000";
   const linkPublico = `${appUrl}/rifa/${rifa.slug}`;
+
+  // Sorteo: ¿está toda la rifa vendida? y ganadores cargados (si los hay).
+  const completaVendida = vendidos.length >= rifa.cantidadNumeros;
+  const ganadores = await obtenerGanadoresRifa(rifa.id);
 
   return (
     <div className="space-y-6">
@@ -82,6 +87,53 @@ export default async function RifaDetallePage({
           </p>
         </div>
       </div>
+
+      {/* Sorteo: cargar ganadores (solo si está toda vendida) */}
+      {completaVendida && (
+        <CargarGanadoresRifa
+          rifaId={rifa.id}
+          cifras={rifa.cifras}
+          cantidadNumeros={rifa.cantidadNumeros}
+          ganadoresActuales={{
+            numero1: rifa.numeroGanador1,
+            numero2: rifa.numeroGanador2,
+            numero3: rifa.numeroGanador3,
+          }}
+        />
+      )}
+
+      {/* Ganadores (una vez cargados los números) */}
+      {ganadores && (
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold text-tiro-azul">🏆 Ganadores</h2>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {ganadores.map((g) => (
+              <div key={g.posicion} className="card">
+                <p className="text-sm font-semibold text-tiro-dorado">
+                  {g.posicion}° premio — {g.premioTitulo}
+                </p>
+                <p className="mt-1 text-2xl font-bold text-tiro-azul">
+                  {g.numeroFormateado ?? "-"}
+                </p>
+                {g.comprador ? (
+                  <div className="mt-1 text-sm">
+                    <p className="font-medium">
+                      {g.comprador.apellido}, {g.comprador.nombre}
+                    </p>
+                    {g.comprador.telefono && (
+                      <p className="text-tiro-grisTexto">{g.comprador.telefono}</p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="mt-1 text-sm text-tiro-grisTexto">
+                    Número sin ganador registrado.
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Premios */}
       <section className="space-y-3">

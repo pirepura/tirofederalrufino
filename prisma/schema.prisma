@@ -250,6 +250,12 @@ model Rifa {
 
   estado String @default("activa") // activa | finalizada
 
+  // Números ganadores cargados a mano (según Lotería Nacional), uno por premio.
+  // Se completan cuando todos los números están vendidos.
+  numeroGanador1 Int?
+  numeroGanador2 Int?
+  numeroGanador3 Int?
+
   premios PremioRifa[]
   numeros NumeroRifa[]
 

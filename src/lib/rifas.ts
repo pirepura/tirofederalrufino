@@ -237,3 +237,113 @@ export async function rifasActivasParaSocio() {
     })
   );
 }
+
+// ¿Están todos los números de la rifa vendidos? (habilita la carga de ganadores)
+export async function rifaCompletaVendida(rifaId: string): Promise<boolean> {
+  const rifa = await prisma.rifa.findUnique({ where: { id: rifaId } });
+  if (!rifa) return false;
+  const vendidos = await prisma.numeroRifa.count({
+    where: { rifaId, estado: ESTADO_NUMERO_RIFA.VENDIDO },
+  });
+  return vendidos >= rifa.cantidadNumeros;
+}
+
+// Carga (a mano) los 3 números ganadores según la Lotería Nacional.
+// Requiere que TODOS los números estén vendidos. Valida rango y que no se
+// repitan. No sortea nada: solo guarda los números para mapearlos a compradores.
+export async function cargarNumerosGanadores(params: {
+  rifaId: string;
+  numero1: number;
+  numero2: number;
+  numero3: number;
+}) {
+  const rifa = await prisma.rifa.findUnique({ where: { id: params.rifaId } });
+  if (!rifa) throw new Error("Rifa no encontrada");
+
+  const completa = await rifaCompletaVendida(params.rifaId);
+  if (!completa) {
+    throw new Error(
+      "Todavía no se vendieron todos los números. Los ganadores se cargan cuando la rifa está completa."
+    );
+  }
+
+  const nums = [params.numero1, params.numero2, params.numero3];
+  for (const n of nums) {
+    if (!Number.isInteger(n) || n < 0 || n >= rifa.cantidadNumeros) {
+      throw new Error(
+        `Cada número ganador debe estar entre 0 y ${rifa.cantidadNumeros - 1}`
+      );
+    }
+  }
+  if (new Set(nums).size !== 3) {
+    throw new Error("Los 3 números ganadores deben ser distintos");
+  }
+
+  return prisma.rifa.update({
+    where: { id: params.rifaId },
+    data: {
+      numeroGanador1: params.numero1,
+      numeroGanador2: params.numero2,
+      numeroGanador3: params.numero3,
+    },
+  });
+}
+
+// Devuelve los ganadores (premio, número, comprador) según los números
+// ganadores cargados. Si un número no fue vendido, ganador queda en null.
+export type GanadorRifa = {
+  posicion: number; // 1 | 2 | 3
+  premioTitulo: string;
+  numero: number | null;
+  numeroFormateado: string | null;
+  comprador: { nombre: string; apellido: string; telefono: string | null } | null;
+};
+
+export async function obtenerGanadoresRifa(
+  rifaId: string
+): Promise<GanadorRifa[] | null> {
+  const rifa = await prisma.rifa.findUnique({
+    where: { id: rifaId },
+    include: { premios: { orderBy: { posicion: "asc" } } },
+  });
+  if (!rifa) return null;
+
+  const numerosGanadores = [
+    rifa.numeroGanador1,
+    rifa.numeroGanador2,
+    rifa.numeroGanador3,
+  ];
+
+  // Si no se cargó ningún ganador, no hay nada que mostrar.
+  if (numerosGanadores.every((n) => n == null)) return null;
+
+  const resultado: GanadorRifa[] = [];
+  for (let i = 0; i < 3; i++) {
+    const numero = numerosGanadores[i] ?? null;
+    const premio = rifa.premios.find((p) => p.posicion === i + 1);
+
+    let comprador: GanadorRifa["comprador"] = null;
+    if (numero != null) {
+      const fila = await prisma.numeroRifa.findUnique({
+        where: { rifaId_numero: { rifaId, numero } },
+      });
+      if (fila && fila.estado === ESTADO_NUMERO_RIFA.VENDIDO) {
+        comprador = {
+          nombre: fila.compradorNombre ?? "",
+          apellido: fila.compradorApellido ?? "",
+          telefono: fila.compradorTelefono ?? null,
+        };
+      }
+    }
+
+    resultado.push({
+      posicion: i + 1,
+      premioTitulo: premio?.titulo ?? `${i + 1}° premio`,
+      numero,
+      numeroFormateado: numero != null ? formatearNumero(numero, rifa.cifras) : null,
+      comprador,
+    });
+  }
+
+  return resultado;
+}
