@@ -5,6 +5,7 @@ import {
   ESTADO_SOCIO,
   ESTADO_CUOTA,
   ESTADO_SOLICITUD,
+  ESTADO_NUMERO_RIFA,
   formatearPesos,
 } from "@/lib/constants";
 
@@ -44,6 +45,28 @@ export default async function AdminDashboard() {
   const pagosAVerificar = await prisma.cuota.count({
     where: { estado: ESTADO_CUOTA.EN_REVISION },
   });
+
+  // --- Ingresos por fuente ---
+  const ingresoCuotas = recaudadoAgg._sum.monto ?? 0;
+
+  // Rifas: cada número vendido aporta el precio de su rifa.
+  const numerosVendidos = await prisma.numeroRifa.findMany({
+    where: { estado: ESTADO_NUMERO_RIFA.VENDIDO },
+    select: { rifa: { select: { precioNumero: true } } },
+  });
+  const ingresoRifas = numerosVendidos.reduce(
+    (t, n) => t + (n.rifa?.precioNumero ?? 0),
+    0
+  );
+
+  // Torneos: inscripciones con pago confirmado.
+  const torneosAgg = await prisma.participacionTorneo.aggregate({
+    where: { estadoPago: "pagado" },
+    _sum: { montoInscripcion: true },
+  });
+  const ingresoTorneos = torneosAgg._sum.montoInscripcion ?? 0;
+
+  const ingresoTotal = ingresoCuotas + ingresoRifas + ingresoTorneos;
 
   const tarjetas = [
     { label: "Socios totales", valor: totalSocios, color: "text-tiro-azul" },
@@ -104,20 +127,47 @@ export default async function AdminDashboard() {
         ))}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="card">
-          <p className="text-sm text-tiro-grisTexto">Total recaudado</p>
-          <p className="mt-1 text-2xl font-bold text-green-600">
-            {formatearPesos(recaudadoAgg._sum.monto ?? 0)}
-          </p>
+      {/* Ingresos por fuente */}
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold text-tiro-azul">Ingresos del club</h2>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="card">
+            <p className="text-sm text-tiro-grisTexto">Cuotas</p>
+            <p className="mt-1 text-2xl font-bold text-green-600">
+              {formatearPesos(ingresoCuotas)}
+            </p>
+          </div>
+          <div className="card">
+            <p className="text-sm text-tiro-grisTexto">Rifas</p>
+            <p className="mt-1 text-2xl font-bold text-green-600">
+              {formatearPesos(ingresoRifas)}
+            </p>
+          </div>
+          <div className="card">
+            <p className="text-sm text-tiro-grisTexto">Torneos</p>
+            <p className="mt-1 text-2xl font-bold text-green-600">
+              {formatearPesos(ingresoTorneos)}
+            </p>
+          </div>
         </div>
-        <div className="card">
-          <p className="text-sm text-tiro-grisTexto">Por cobrar (impago)</p>
-          <p className="mt-1 text-2xl font-bold text-red-600">
-            {formatearPesos(impagasAgg._sum.monto ?? 0)}
-          </p>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="card border-tiro-azul/30 bg-tiro-azul/5">
+            <p className="text-sm text-tiro-grisTexto">Total recaudado</p>
+            <p className="mt-1 text-2xl font-bold text-tiro-azul">
+              {formatearPesos(ingresoTotal)}
+            </p>
+            <p className="mt-1 text-xs text-tiro-grisTexto">
+              Cuotas + rifas + torneos
+            </p>
+          </div>
+          <div className="card">
+            <p className="text-sm text-tiro-grisTexto">Cuotas por cobrar (impago)</p>
+            <p className="mt-1 text-2xl font-bold text-red-600">
+              {formatearPesos(impagasAgg._sum.monto ?? 0)}
+            </p>
+          </div>
         </div>
-      </div>
+      </section>
 
       <div className="flex flex-wrap gap-3">
         <Link href="/admin/socios/nuevo" className="btn-primary">
