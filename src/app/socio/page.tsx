@@ -12,12 +12,14 @@ import {
   nombreMes,
 } from "@/lib/constants";
 import { rankingDeSocio, proximoTorneoAbierto } from "@/lib/torneos";
+import { rifasActivasParaSocio } from "@/lib/rifas";
 import { mercadoPagoConfigurado } from "@/lib/mercadopago";
 import { CuotaBadge } from "@/components/EstadoBadge";
 import PagarCuotaBtn from "@/components/PagarCuotaBtn";
 import InformarPagoBtn from "@/components/InformarPagoBtn";
 import DebitoAutomatico from "@/components/DebitoAutomatico";
 import InscripcionSocioTorneo from "@/components/InscripcionSocioTorneo";
+import RifasSocio from "@/components/RifasSocio";
 
 export const dynamic = "force-dynamic";
 
@@ -58,6 +60,9 @@ export default async function SocioDashboard() {
     }
   }
   const mpDisponible = mercadoPagoConfigurado();
+
+  // Rifas activas para mostrar en el panel
+  const rifas = await rifasActivasParaSocio();
 
   return (
     <div className="space-y-6">
@@ -111,6 +116,9 @@ export default async function SocioDashboard() {
           mpDisponible={mpDisponible}
         />
       )}
+
+      {/* Rifas disponibles */}
+      <RifasSocio rifas={rifas} />
 
       {/* Débito automático */}
       <DebitoAutomatico

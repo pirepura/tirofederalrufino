@@ -206,3 +206,34 @@ export async function finalizarRifa(rifaId: string) {
     data: { estado: ESTADO_RIFA.FINALIZADA, imagenData: null },
   });
 }
+
+// Rifas activas para mostrar en el panel del socio (con portada, precio y
+// disponibilidad de números). Ordenadas de la más nueva a la más vieja.
+export async function rifasActivasParaSocio() {
+  const rifas = await prisma.rifa.findMany({
+    where: { estado: ESTADO_RIFA.ACTIVA },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      slug: true,
+      titulo: true,
+      descripcion: true,
+      imagenData: true,
+      precioNumero: true,
+      cantidadNumeros: true,
+    },
+  });
+
+  return Promise.all(
+    rifas.map(async (r) => {
+      const vendidos = await prisma.numeroRifa.count({
+        where: { rifaId: r.id, estado: ESTADO_NUMERO_RIFA.VENDIDO },
+      });
+      return {
+        ...r,
+        vendidos,
+        disponibles: r.cantidadNumeros - vendidos,
+      };
+    })
+  );
+}
