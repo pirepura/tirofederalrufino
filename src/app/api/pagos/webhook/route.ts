@@ -16,7 +16,7 @@ import {
   marcarCuotaPagada,
   registrarPagoAutomatico,
 } from "@/lib/cuotas";
-import { confirmarNumeroVendido } from "@/lib/rifas";
+import { confirmarCompraVendida } from "@/lib/rifas";
 import { confirmarPagoInscripcion } from "@/lib/torneos";
 import { registrarAuditoria } from "@/lib/auditoria";
 
@@ -116,19 +116,20 @@ export async function POST(req: Request) {
       if (pago.status === "approved" && ref) {
         // Número de rifa: external_reference con prefijo "rifa:"
         if (ref.startsWith("rifa:")) {
-          const numeroRifaId = ref.slice("rifa:".length);
-          const num = await confirmarNumeroVendido({
-            numeroRifaId,
+          const compraId = ref.slice("rifa:".length);
+          const compra = await confirmarCompraVendida({
+            compraId,
             mpPaymentId: String(dataId),
           });
-          if (num) {
+          if (compra) {
+            const numerosTxt = compra.numeros.join(", ");
             await registrarAuditoria({
               accion: ACCION_AUDITORIA.RIFA_NUMERO_VENDIDO,
               usuarioRol: "SISTEMA",
               usuarioNombre: "Mercado Pago",
               entidad: "rifa",
-              entidadId: num.rifaId,
-              detalle: `Número ${num.numero} vendido a ${num.compradorNombre ?? ""} ${num.compradorApellido ?? ""}`.trim(),
+              entidadId: compra.rifaId,
+              detalle: `Número(s) ${numerosTxt} vendido(s) a ${compra.compradorNombre ?? ""} ${compra.compradorApellido ?? ""}`.trim(),
             });
           }
         } else if (ref.startsWith("torneo:")) {

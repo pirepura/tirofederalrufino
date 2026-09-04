@@ -125,11 +125,17 @@ export async function obtenerRifaPublica(slug: string) {
   };
 }
 
-// Marca un número como "en proceso" al iniciar la compra. Devuelve la fila.
-// Verifica que el número esté libre y dentro del rango.
-export async function reservarNumeroEnProceso(params: {
+// Genera un id de compra para agrupar varios números pagados juntos.
+function generarCompraId(): string {
+  return `c_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+}
+
+// Reserva UNO O VARIOS números "en proceso" en una sola compra. Todos comparten
+// un compraId (para reconciliar un único pago que cubre varios números).
+// Verifica que estén libres y en rango. Devuelve el compraId y los números.
+export async function reservarNumerosEnProceso(params: {
   rifaId: string;
-  numero: number;
+  numeros: number[];
   nombre: string;
   apellido: string;
   telefono: string;
@@ -139,56 +145,92 @@ export async function reservarNumeroEnProceso(params: {
   if (rifa.estado !== ESTADO_RIFA.ACTIVA) {
     throw new Error("La rifa no está activa");
   }
-  if (params.numero < 0 || params.numero >= rifa.cantidadNumeros) {
-    throw new Error("Número fuera de rango");
+
+  // Quitar duplicados y validar rango.
+  const numeros = Array.from(new Set(params.numeros));
+  if (numeros.length === 0) throw new Error("Elegí al menos un número");
+  for (const n of numeros) {
+    if (n < 0 || n >= rifa.cantidadNumeros) {
+      throw new Error(`El número ${n} está fuera de rango`);
+    }
   }
 
-  const existente = await prisma.numeroRifa.findUnique({
-    where: { rifaId_numero: { rifaId: params.rifaId, numero: params.numero } },
-  });
-  if (existente && existente.estado === ESTADO_NUMERO_RIFA.VENDIDO) {
-    throw new Error("Ese número ya fue vendido");
-  }
-
-  // upsert: crea o reutiliza la fila del número en estado en_proceso
-  return prisma.numeroRifa.upsert({
-    where: { rifaId_numero: { rifaId: params.rifaId, numero: params.numero } },
-    update: {
-      estado: ESTADO_NUMERO_RIFA.EN_PROCESO,
-      compradorNombre: params.nombre,
-      compradorApellido: params.apellido,
-      compradorTelefono: params.telefono,
-    },
-    create: {
+  // Verificar que ninguno esté vendido o en proceso (ocupado).
+  const ocupados = await prisma.numeroRifa.findMany({
+    where: {
       rifaId: params.rifaId,
-      numero: params.numero,
-      estado: ESTADO_NUMERO_RIFA.EN_PROCESO,
-      compradorNombre: params.nombre,
-      compradorApellido: params.apellido,
-      compradorTelefono: params.telefono,
+      numero: { in: numeros },
+      estado: {
+        in: [ESTADO_NUMERO_RIFA.VENDIDO, ESTADO_NUMERO_RIFA.EN_PROCESO],
+      },
     },
+    select: { numero: true },
   });
+  if (ocupados.length > 0) {
+    const lista = ocupados.map((o) => o.numero).join(", ");
+    throw new Error(`Estos números ya no están disponibles: ${lista}`);
+  }
+
+  const compraId = generarCompraId();
+
+  // Reservar todos en una transacción (upsert por cada número).
+  await prisma.$transaction(
+    numeros.map((numero) =>
+      prisma.numeroRifa.upsert({
+        where: { rifaId_numero: { rifaId: params.rifaId, numero } },
+        update: {
+          estado: ESTADO_NUMERO_RIFA.EN_PROCESO,
+          compradorNombre: params.nombre,
+          compradorApellido: params.apellido,
+          compradorTelefono: params.telefono,
+          compraId,
+        },
+        create: {
+          rifaId: params.rifaId,
+          numero,
+          estado: ESTADO_NUMERO_RIFA.EN_PROCESO,
+          compradorNombre: params.nombre,
+          compradorApellido: params.apellido,
+          compradorTelefono: params.telefono,
+          compraId,
+        },
+      })
+    )
+  );
+
+  return { compraId, numeros };
 }
 
-// Confirma la venta de un número (llamado desde el webhook al aprobarse el pago).
-export async function confirmarNumeroVendido(params: {
-  numeroRifaId: string;
+// Confirma la venta de TODOS los números de una compra (llamado desde el webhook
+// al aprobarse el pago). Devuelve la lista de números confirmados.
+export async function confirmarCompraVendida(params: {
+  compraId: string;
   mpPaymentId: string;
 }) {
-  const num = await prisma.numeroRifa.findUnique({
-    where: { id: params.numeroRifaId },
+  const nums = await prisma.numeroRifa.findMany({
+    where: { compraId: params.compraId },
   });
-  if (!num) return null;
-  if (num.estado === ESTADO_NUMERO_RIFA.VENDIDO) return num;
+  if (nums.length === 0) return null;
 
-  return prisma.numeroRifa.update({
-    where: { id: params.numeroRifaId },
+  await prisma.numeroRifa.updateMany({
+    where: {
+      compraId: params.compraId,
+      estado: { not: ESTADO_NUMERO_RIFA.VENDIDO },
+    },
     data: {
       estado: ESTADO_NUMERO_RIFA.VENDIDO,
       mpPaymentId: params.mpPaymentId,
       fechaPago: new Date(),
     },
   });
+
+  // Devolver info útil para la auditoría (rifaId y números).
+  return {
+    rifaId: nums[0].rifaId,
+    numeros: nums.map((n) => n.numero),
+    compradorNombre: nums[0].compradorNombre,
+    compradorApellido: nums[0].compradorApellido,
+  };
 }
 
 // Finaliza una rifa y borra las fotos de los premios (para no acumular).

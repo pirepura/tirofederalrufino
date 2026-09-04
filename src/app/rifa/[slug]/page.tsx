@@ -93,6 +93,7 @@ export default async function RifaPublicaPage({
             cantidadNumeros={rifa.cantidadNumeros}
             cifras={rifa.cifras}
             ocupados={ocupados}
+            precioNumero={rifa.precioNumero}
           />
         )}
 

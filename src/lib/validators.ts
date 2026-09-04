@@ -118,7 +118,11 @@ export const rifaCreateSchema = z.object({
 
 // Compra pública de un número de rifa
 export const comprarNumeroSchema = z.object({
-  numero: z.coerce.number().int().min(0),
+  // Uno o varios números en la misma compra.
+  numeros: z
+    .array(z.coerce.number().int().min(0))
+    .min(1, "Elegí al menos un número")
+    .max(100, "Demasiados números en una sola compra"),
   nombre: z.string().min(1, "El nombre es obligatorio"),
   apellido: z.string().min(1, "El apellido es obligatorio"),
   telefono: z.string().min(6, "El teléfono es obligatorio"),

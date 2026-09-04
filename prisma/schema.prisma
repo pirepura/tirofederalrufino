@@ -294,11 +294,16 @@ model NumeroRifa {
   mpPaymentId    String?
   fechaPago      DateTime?
 
+  // Agrupa los números comprados juntos en una misma operación (varios números,
+  // un solo pago). El external_reference de Mercado Pago usa este id.
+  compraId String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([rifaId, numero])
   @@index([estado])
+  @@index([compraId])
 }
 
 // ---------------------------------------------------------------------------

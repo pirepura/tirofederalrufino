@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { comprarNumeroSchema } from "@/lib/validators";
-import { reservarNumeroEnProceso, formatearNumero } from "@/lib/rifas";
+import { reservarNumerosEnProceso, formatearNumero } from "@/lib/rifas";
 import { crearPreferenciaPago, mercadoPagoConfigurado } from "@/lib/mercadopago";
 import { CLUB } from "@/config/club";
 
@@ -40,25 +40,35 @@ export async function POST(
   }
 
   try {
-    const numeroRifa = await reservarNumeroEnProceso({
+    const { compraId, numeros } = await reservarNumerosEnProceso({
       rifaId: rifa.id,
-      numero: parsed.data.numero,
+      numeros: parsed.data.numeros,
       nombre: parsed.data.nombre,
       apellido: parsed.data.apellido,
       telefono: parsed.data.telefono,
     });
 
-    const numeroFmt = formatearNumero(parsed.data.numero, rifa.cifras);
+    const cantidad = numeros.length;
+    const numerosFmt = numeros
+      .map((n) => formatearNumero(n, rifa.cifras))
+      .join(", ");
+    const titulo =
+      cantidad === 1
+        ? `Rifa ${rifa.titulo} - Número ${numerosFmt} - ${CLUB.nombre}`
+        : `Rifa ${rifa.titulo} - ${cantidad} números (${numerosFmt}) - ${CLUB.nombre}`;
+
     const appUrl = (process.env.APP_URL ?? "http://localhost:3000").trim();
     const pref = await crearPreferenciaPago({
-      titulo: `Rifa ${rifa.titulo} - Número ${numeroFmt} - ${CLUB.nombre}`,
+      titulo,
       monto: rifa.precioNumero,
-      externalReference: `rifa:${numeroRifa.id}`,
+      cantidad,
+      externalReference: `rifa:${compraId}`,
       backUrl: `${appUrl}/rifa/${rifa.slug}/gracias`,
     });
 
-    await prisma.numeroRifa.update({
-      where: { id: numeroRifa.id },
+    // Guardar el id de preferencia en todos los números de la compra.
+    await prisma.numeroRifa.updateMany({
+      where: { compraId },
       data: { mpPreferenceId: pref.id ?? null },
     });
 
