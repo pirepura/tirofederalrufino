@@ -14,22 +14,13 @@ export const dynamic = "force-dynamic";
 export default async function AdminDashboard() {
   await actualizarCuotasVencidas();
 
-  const [
-    totalSocios,
-    sociosActivos,
-    cuotasPendientes,
-    cuotasVencidas,
-    recaudadoAgg,
-  ] = await Promise.all([
-    prisma.socio.count(),
-    prisma.socio.count({ where: { estado: ESTADO_SOCIO.ACTIVO } }),
-    prisma.cuota.count({ where: { estado: ESTADO_CUOTA.PENDIENTE } }),
-    prisma.cuota.count({ where: { estado: ESTADO_CUOTA.VENCIDA } }),
-    prisma.cuota.aggregate({
-      where: { estado: ESTADO_CUOTA.PAGADA },
-      _sum: { monto: true },
-    }),
-  ]);
+  const [totalSocios, sociosActivos, cuotasPendientes, cuotasVencidas] =
+    await Promise.all([
+      prisma.socio.count(),
+      prisma.socio.count({ where: { estado: ESTADO_SOCIO.ACTIVO } }),
+      prisma.cuota.count({ where: { estado: ESTADO_CUOTA.PENDIENTE } }),
+      prisma.cuota.count({ where: { estado: ESTADO_CUOTA.VENCIDA } }),
+    ]);
 
   const impagasAgg = await prisma.cuota.aggregate({
     where: {
@@ -46,12 +37,26 @@ export default async function AdminDashboard() {
     where: { estado: ESTADO_CUOTA.EN_REVISION },
   });
 
-  // --- Ingresos por fuente ---
-  const ingresoCuotas = recaudadoAgg._sum.monto ?? 0;
+  // --- Ingresos del MES EN CURSO (según fecha de cobro) ---
+  const ahora = new Date();
+  const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
+  const inicioMesSiguiente = new Date(
+    ahora.getFullYear(),
+    ahora.getMonth() + 1,
+    1
+  );
+  const rangoMes = { gte: inicioMes, lt: inicioMesSiguiente };
 
-  // Rifas: cada número vendido aporta el precio de su rifa.
+  // Cuotas pagadas este mes (por fecha de pago).
+  const cuotasMesAgg = await prisma.cuota.aggregate({
+    where: { estado: ESTADO_CUOTA.PAGADA, fechaPago: rangoMes },
+    _sum: { monto: true },
+  });
+  const ingresoCuotas = cuotasMesAgg._sum.monto ?? 0;
+
+  // Rifas: números vendidos cuyo pago se acreditó este mes.
   const numerosVendidos = await prisma.numeroRifa.findMany({
-    where: { estado: ESTADO_NUMERO_RIFA.VENDIDO },
+    where: { estado: ESTADO_NUMERO_RIFA.VENDIDO, fechaPago: rangoMes },
     select: { rifa: { select: { precioNumero: true } } },
   });
   const ingresoRifas = numerosVendidos.reduce(
@@ -59,14 +64,20 @@ export default async function AdminDashboard() {
     0
   );
 
-  // Torneos: inscripciones con pago confirmado.
+  // Torneos: inscripciones pagadas este mes.
   const torneosAgg = await prisma.participacionTorneo.aggregate({
-    where: { estadoPago: "pagado" },
+    where: { estadoPago: "pagado", fechaPago: rangoMes },
     _sum: { montoInscripcion: true },
   });
   const ingresoTorneos = torneosAgg._sum.montoInscripcion ?? 0;
 
   const ingresoTotal = ingresoCuotas + ingresoRifas + ingresoTorneos;
+
+  // Nombre del mes en curso para el título.
+  const nombreMesActual = ahora.toLocaleDateString("es-AR", {
+    month: "long",
+    year: "numeric",
+  });
 
   const tarjetas = [
     { label: "Socios totales", valor: totalSocios, color: "text-tiro-azul" },
@@ -127,9 +138,11 @@ export default async function AdminDashboard() {
         ))}
       </div>
 
-      {/* Ingresos por fuente */}
+      {/* Ingresos del mes en curso */}
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold text-tiro-azul">Ingresos del club</h2>
+        <h2 className="text-lg font-semibold text-tiro-azul">
+          Ingresos de {nombreMesActual}
+        </h2>
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="card">
             <p className="text-sm text-tiro-grisTexto">Cuotas</p>
